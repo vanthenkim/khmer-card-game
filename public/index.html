@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>ល្បែងបៀ · Khmer Card Game</title>
+<title>ááááááá Â· Khmer Card Game</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
 <style>
-/* ── Reset ─────────────────────────────────────────────────── */
+/* ââ Reset âââââââââââââââââââââââââââââââââââââââââââââââââââ */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
   --green:#1a5c2a;--green2:#2d7a40;--green3:#3d9e55;
@@ -21,11 +21,11 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',sans-serif;backgrou
 button{cursor:pointer;border:none;border-radius:var(--radius);font-family:inherit;font-size:14px;transition:all .15s}
 input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;outline:none}
 
-/* ── Screens ─────────────────────────────────────────────── */
+/* ââ Screens âââââââââââââââââââââââââââââââââââââââââââââââ */
 .screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px}
 .screen.active{display:flex}
 
-/* ── Animations ──────────────────────────────────────────── */
+/* ââ Animations ââââââââââââââââââââââââââââââââââââââââââââ */
 @keyframes cardSlideIn{from{transform:translateY(50px) scale(.85);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
 @keyframes bombFlashAnim{0%{background:var(--green)}20%{background:#c62828}50%{background:#ff6600}80%{background:#c62828}100%{background:var(--green)}}
 @keyframes winPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,200,66,0)}50%{box-shadow:0 0 0 24px rgba(245,200,66,.35)}}
@@ -37,15 +37,15 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
 @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 
-/* ── Lang Toggle ─────────────────────────────────────────── */
+/* ââ Lang Toggle âââââââââââââââââââââââââââââââââââââââââââ */
 .lang-toggle{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:50}
 .lang-btn{padding:5px 11px;background:var(--surface);border-radius:6px;color:var(--text2);font-size:12px}
 .lang-btn.active{background:var(--green3);color:#fff}
 
-/* ── Sound Toggle ────────────────────────────────────────── */
+/* ââ Sound Toggle ââââââââââââââââââââââââââââââââââââââââââ */
 .sound-btn{padding:5px 10px;background:var(--surface);border-radius:6px;color:var(--text2);font-size:14px;position:absolute;top:12px;left:12px;z-index:50}
 
-/* ══ AUTH ════════════════════════════════════════════════ */
+/* ââ AUTH ââââââââââââââââââââââââââââââââââââââââââââââââ */
 #authScreen{background:linear-gradient(160deg,#0d2e15,#0d1f12)}
 .auth-box{background:var(--surface);padding:32px 28px;border-radius:16px;width:100%;max-width:360px;box-shadow:var(--shadow)}
 .auth-logo{text-align:center;margin-bottom:24px}
@@ -60,7 +60,7 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
 .auth-btn:active{background:var(--gold2)}
 .auth-error{color:#ff6b6b;font-size:13px;text-align:center;min-height:18px}
 
-/* ══ LOBBY ═══════════════════════════════════════════════ */
+/* ââ LOBBY âââââââââââââââââââââââââââââââââââââââââââââââ */
 #lobbyScreen{background:linear-gradient(160deg,#0d2e15,#0d1f12);padding:0}
 .lobby-header{width:100%;background:var(--surface);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--green2)}
 .lobby-header .logo{font-size:18px;font-weight:700;color:var(--gold)}
@@ -85,7 +85,7 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
 .join-btn{padding:8px 18px;background:var(--green3);color:#fff;font-weight:600;border-radius:8px}
 .no-rooms{text-align:center;color:var(--text2);padding:40px 0;font-size:14px}
 
-/* ══ WAITING ══════════════════════════════════════════════ */
+/* ââ WAITING ââââââââââââââââââââââââââââââââââââââââââââââ */
 #waitingScreen{background:linear-gradient(160deg,#0d2e15,#0d1f12)}
 .waiting-box{background:var(--surface);border-radius:16px;padding:24px;width:100%;max-width:420px}
 .waiting-box h2{font-size:18px;color:var(--gold);margin-bottom:4px}
@@ -102,7 +102,7 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
 .start-btn:disabled{background:#555;color:#888;cursor:default}
 .leave-btn{padding:14px 20px;background:var(--surface2);color:var(--text2);font-weight:600;border-radius:10px}
 
-/* ══ GAME ════════════════════════════════════════════════ */
+/* ââ GAME ââââââââââââââââââââââââââââââââââââââââââââââââ */
 #gameScreen{background:var(--green);padding:0;overflow:hidden}
 .game-table{width:100%;height:100%;display:grid;grid-template-rows:auto 1fr auto;max-height:100dvh}
 
@@ -164,7 +164,7 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
 .turn-label{font-size:11px;font-weight:700;color:var(--gold);text-align:center}
 .wait-label{font-size:11px;color:rgba(255,255,255,.5);text-align:center}
 
-/* ── Chat Panel ──────────────────────────────────────────── */
+/* ââ Chat Panel ââââââââââââââââââââââââââââââââââââââââââââ */
 .chat-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:none}
 .chat-overlay.open{display:block}
 .chat-panel{position:fixed;bottom:0;left:0;right:0;max-height:70vh;background:var(--surface);border-radius:16px 16px 0 0;z-index:90;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s ease}
@@ -183,11 +183,11 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
 .chat-input-row input{flex:1;padding:10px 12px;background:var(--surface2);color:var(--text);border:1px solid #2a4a30;border-radius:8px}
 .chat-send{padding:10px 16px;background:var(--green3);color:#fff;font-weight:700;border-radius:8px}
 
-/* ── Notification ────────────────────────────────────────── */
+/* ââ Notification ââââââââââââââââââââââââââââââââââââââââââ */
 .notif{position:fixed;top:56px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.88);color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;pointer-events:none;transition:opacity .3s;white-space:nowrap}
 .notif.hidden{opacity:0}
 
-/* ── Modals ──────────────────────────────────────────────── */
+/* ââ Modals ââââââââââââââââââââââââââââââââââââââââââââââââ */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
 .modal-overlay.active{display:flex}
 .modal{background:var(--surface);border-radius:16px;padding:24px;width:100%;max-width:400px;text-align:center}
@@ -220,15 +220,15 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
 
 <div class="lang-toggle" id="langToggle">
   <button class="lang-btn active" onclick="setLang('en')">EN</button>
-  <button class="lang-btn" onclick="setLang('km')">ខ្មែរ</button>
+  <button class="lang-btn" onclick="setLang('km')">ááááá</button>
 </div>
-<button class="sound-btn" id="soundBtn" onclick="toggleSound()" title="Toggle sound">🔊</button>
+<button class="sound-btn" id="soundBtn" onclick="toggleSound()" title="Toggle sound">ð</button>
 
-<!-- ══ AUTH ════════════════════════════════════════════════ -->
+<!-- ââ AUTH ââââââââââââââââââââââââââââââââââââââââââââââââ -->
 <div class="screen active" id="authScreen">
   <div class="auth-box">
     <div class="auth-logo">
-      <div class="title">🃏 ល្បែងបៀ</div>
+      <div class="title">ð ááááááá</div>
       <div class="sub" data-i18n="subtitle">Khmer Card Game</div>
     </div>
     <div class="tab-row">
@@ -244,14 +244,14 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
   </div>
 </div>
 
-<!-- ══ LOBBY ═══════════════════════════════════════════════ -->
+<!-- ââ LOBBY âââââââââââââââââââââââââââââââââââââââââââââââ -->
 <div class="screen" id="lobbyScreen">
   <div class="lobby-header">
-    <div class="logo">🃏 ល្បែងបៀ</div>
+    <div class="logo">ð ááááááá</div>
     <div class="user-info">
       <span id="lobbyUsername"></span>
-      <span class="coins">🪙 <span id="lobbyCoins">0</span></span>
-      <span class="diamonds">💎 <span id="lobbyDiamonds">0</span></span>
+      <span class="coins">ðª <span id="lobbyCoins">0</span></span>
+      <span class="diamonds">ð <span id="lobbyDiamonds">0</span></span>
     </div>
   </div>
   <div class="lobby-body">
@@ -261,8 +261,8 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
         <input id="roomNameInput" type="text" placeholder="Room name" style="flex:1;min-width:100px"/>
         <input id="stakesInput" type="number" class="stakes-input" value="10" min="1" max="1000"/>
         <select id="variantSelect">
-          <option value="FREE">FREE (សេរី)</option>
-          <option value="COMUNIS">COMUNIS (កុម្មុយនិស្ត)</option>
+          <option value="FREE">FREE (áááá¸)</option>
+          <option value="COMUNIS">COMUNIS (áá»áááá»ááá·ááá)</option>
         </select>
         <button class="create-btn" onclick="createRoom()">Create</button>
       </div>
@@ -274,7 +274,7 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
   </div>
 </div>
 
-<!-- ══ WAITING ═════════════════════════════════════════════ -->
+<!-- ââ WAITING âââââââââââââââââââââââââââââââââââââââââââââ -->
 <div class="screen" id="waitingScreen">
   <div class="waiting-box">
     <h2 data-i18n="waitingRoom">Waiting Room</h2>
@@ -282,7 +282,7 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
     <div style="font-size:13px;color:var(--text2)" data-i18n="shareCode">Share this code:</div>
     <div class="room-code" id="waitingRoomCode" onclick="copyRoomCode()" title="Click to copy">------</div>
     <div class="copy-hint" data-i18n="clickCopy">Tap to copy</div>
-    <div class="section-title" data-i18n="players">Players (2–4)</div>
+    <div class="section-title" data-i18n="players">Players (2â4)</div>
     <div class="player-slots" id="playerSlots"></div>
     <div class="waiting-actions">
       <button class="leave-btn" onclick="leaveRoom()" data-i18n="leave">Leave</button>
@@ -291,7 +291,7 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
   </div>
 </div>
 
-<!-- ══ GAME ════════════════════════════════════════════════ -->
+<!-- ââ GAME ââââââââââââââââââââââââââââââââââââââââââââââââ -->
 <div class="screen" id="gameScreen">
   <div class="game-table" id="gameTable">
     <!-- Top bar -->
@@ -299,8 +299,8 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
       <span class="room-id" id="gameRoomId"></span>
       <span class="variant-label" id="gameVariantLabel"></span>
       <span id="turnLabel" class="wait-label">...</span>
-      <span class="my-coins">🪙<span id="gameMyCoins">0</span></span>
-      <button class="chat-toggle-btn" onclick="toggleChat()" title="Chat">💬<span class="chat-badge" id="chatBadge"></span></button>
+      <span class="my-coins">ðª<span id="gameMyCoins">0</span></span>
+      <button class="chat-toggle-btn" onclick="toggleChat()" title="Chat">ð¬<span class="chat-badge" id="chatBadge"></span></button>
     </div>
 
     <!-- Middle area -->
@@ -315,7 +315,7 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
         <div class="stakes-info" id="stakesInfo"></div>
         <div class="table-label" id="tableLabel">Table is empty</div>
         <div class="table-cards" id="tableCards"></div>
-        <div class="bomb-hint" id="bombHint" style="display:none">⚡ Pair of 2s — Bomb!</div>
+        <div class="bomb-hint" id="bombHint" style="display:none">â¡ Pair of 2s â Bomb!</div>
       </div>
       <div class="opp-area opp-right" id="oppRight" style="display:none">
         <div id="oppRightInner"></div>
@@ -328,18 +328,18 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
       <div class="action-row">
         <button class="action-btn btn-pass" id="passBtn" onclick="sendPass()" disabled data-i18n="pass">Pass</button>
         <button class="action-btn btn-play" id="playBtn" onclick="sendPlay()" disabled data-i18n="play">Play</button>
-        <button class="action-btn btn-bomb" id="bombBtn" onclick="sendBomb()" style="display:none" data-i18n="bomb">💣 Bomb!</button>
+        <button class="action-btn btn-bomb" id="bombBtn" onclick="sendBomb()" style="display:none" data-i18n="bomb">ð£ Bomb!</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ── Chat Panel ──────────────────────────────────────────── -->
+<!-- ââ Chat Panel ââââââââââââââââââââââââââââââââââââââââââââ -->
 <div class="chat-overlay" id="chatOverlay" onclick="toggleChat()"></div>
 <div class="chat-panel" id="chatPanel">
   <div class="chat-header">
-    <h3>💬 Chat</h3>
-    <button class="chat-close" onclick="toggleChat()">✕</button>
+    <h3>ð¬ Chat</h3>
+    <button class="chat-close" onclick="toggleChat()">â</button>
   </div>
   <div class="chat-messages" id="chatMessages"></div>
   <div class="chat-input-row">
@@ -349,11 +349,11 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
   </div>
 </div>
 
-<!-- ── Modals ──────────────────────────────────────────────── -->
+<!-- ââ Modals ââââââââââââââââââââââââââââââââââââââââââââââââ -->
 <div class="modal-overlay" id="gameOverModal">
   <div class="modal">
-    <h2 data-i18n="gameOver">Game Over! 🏆</h2>
-    <div id="doubleWinBanner" style="display:none;color:var(--gold);font-weight:700;margin-bottom:10px;font-size:15px">⚡ Double Win!</div>
+    <h2 data-i18n="gameOver">Game Over! ð</h2>
+    <div id="doubleWinBanner" style="display:none;color:var(--gold);font-weight:700;margin-bottom:10px;font-size:15px">â¡ Double Win!</div>
     <div class="result-list" id="resultList"></div>
     <div class="bomb-detail" id="bombDetail"></div>
     <button class="modal-btn" onclick="closeGameOver()" data-i18n="backToLobby">Back to Lobby</button>
@@ -362,8 +362,8 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
 
 <div class="modal-overlay" id="autoWinModal">
   <div class="modal auto-win-modal">
-    <h2 data-i18n="autoWin">Auto Win! 🏆</h2>
-    <div class="aw-icon">🎉</div>
+    <h2 data-i18n="autoWin">Auto Win! ð</h2>
+    <div class="aw-icon">ð</div>
     <div id="autoWinMsg" style="margin-bottom:16px;font-size:15px"></div>
     <div style="font-size:12px;color:var(--text2)" data-i18n="gameResetting">Game resetting in 5s...</div>
   </div>
@@ -372,31 +372,31 @@ input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;ou
 <div class="notif hidden" id="notif"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // i18n
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const I18N = {
   en:{
-    subtitle:'Khmer Card Game · 4 Players',
+    subtitle:'Khmer Card Game Â· 4 Players',
     login:'Login',register:'Register',
-    createRoom:'Create Room',openRooms:'Open Rooms',noRooms:'No open rooms — create one!',
+    createRoom:'Create Room',openRooms:'Open Rooms',noRooms:'No open rooms â create one!',
     waitingRoom:'Waiting Room',shareCode:'Share this room code:',clickCopy:'Tap to copy',
-    players:'Players (2–4)',leave:'Leave',startGame:'Start Game',
-    pass:'Pass',play:'Play',bomb:'💣 Bomb!',
-    gameOver:'Game Over! 🏆',backToLobby:'Back to Lobby',
+    players:'Players (2â4)',leave:'Leave',startGame:'Start Game',
+    pass:'Pass',play:'Play',bomb:'ð£ Bomb!',
+    gameOver:'Game Over! ð',backToLobby:'Back to Lobby',
     autoWin:'Auto Win!',gameResetting:'Game resetting in 5s...',
-    pos:['1st 🥇','2nd 🥈','3rd 🥉','4th 😭'],finishes:'done',
+    pos:['1st ð¥','2nd ð¥','3rd ð¥','4th ð­'],finishes:'done',
   },
   km:{
-    subtitle:'ល្បែងបៀ · ៤នាក់',
-    login:'ចូល',register:'ចុះឈ្មោះ',
-    createRoom:'បង្កើតបន្ទប់',openRooms:'បន្ទប់បើក',noRooms:'គ្មានបន្ទប់ — បង្កើតថ្មី!',
-    waitingRoom:'បន្ទប់រង់ចាំ',shareCode:'ចែករំលែកលេខកូដ:',clickCopy:'ចុចដើម្បីចម្លង',
-    players:'អ្នកលេង (២–៤)',leave:'ចេញ',startGame:'ចាប់ផ្ដើម',
-    pass:'ប្ដូរ',play:'លេង',bomb:'💣 Bomb!',
-    gameOver:'ល្បែងចប់! 🏆',backToLobby:'ត្រឡប់',
-    autoWin:'ឈ្នះស្វ័យប្រវត្តិ!',gameResetting:'ចាប់ផ្ដើមឡើងវិញ...',
-    pos:['ទី១ 🥇','ទី២ 🥈','ទី៣ 🥉','ទី៤ 😭'],finishes:'ចប់',
+    subtitle:'ááááááá Â· á¤áá¶áá',
+    login:'áá¼á',register:'áá»áááááá',
+    createRoom:'ááááá¾ááááááá',openRooms:'áááááááá¾á',noRooms:'áááá¶ááááááá â ááááá¾ááááá¸!',
+    waitingRoom:'ááááááááááá¶á',shareCode:'ááááááááááááá¼á:',clickCopy:'áá»ááá¾áááá¸ááááá',
+    players:'á¢áááááá (á¢âá¤)',leave:'ááá',startGame:'áá¶áááááá¾á',
+    pass:'áááá¼á',play:'ááá',bomb:'ð£ Bomb!',
+    gameOver:'áááááááá! ð',backToLobby:'áááá¡áá',
+    autoWin:'ááááááááááááááááá·!',gameResetting:'áá¶áááááá¾áá¡á¾ááá·á...',
+    pos:['áá¸á¡ ð¥','áá¸á¢ ð¥','áá¸á£ ð¥','áá¸á¤ ð­'],finishes:'ááá',
   }
 };
 let lang='en';
@@ -407,9 +407,9 @@ function setLang(l){
 }
 function t(k){return I18N[lang][k]||k}
 
-// ═══════════════════════════════════════════════════════════
-// Sound Engine (Web Audio API — no files needed)
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// Sound Engine (Web Audio API â no files needed)
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 let audioCtx=null,soundEnabled=true;
 function initAudio(){
   if(audioCtx)return;
@@ -417,7 +417,7 @@ function initAudio(){
 }
 function toggleSound(){
   soundEnabled=!soundEnabled;
-  document.getElementById('soundBtn').textContent=soundEnabled?'🔊':'🔇';
+  document.getElementById('soundBtn').textContent=soundEnabled?'ð':'ð';
 }
 function playSound(type){
   if(!soundEnabled||!audioCtx)return;
@@ -456,11 +456,11 @@ function playSound(type){
   }catch(e){}
 }
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Card Helpers (client-side)
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const RANKS=['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
-const SYMS=['♣','♠','♦','♥'];
+const SYMS=['â£','â ','â¦','â¥'];
 function cRank(v){return Math.floor(v/4)}
 function cSuit(v){return v%4}
 function isRed(v){return cSuit(v)>=2}
@@ -476,15 +476,15 @@ function makeCard(v,size='md',selected=false,isTable=false){
   return el;
 }
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // App State
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const socket=io();
 const S={user:null,room:null,gs:null,hand:[],sel:new Set(),chatOpen:false,unread:0};
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Auth
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 let authTab='login';
 function showTab(tab){
   authTab=tab;
@@ -499,7 +499,8 @@ async function submitAuth(e){
   const pw=document.getElementById('authPassword').value;
   try{
     const r=await fetch(authTab==='login'?'/api/login':'/api/register',{
-      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:un,password:pw})
+
+      method:'POST',headers:{'ontent-Type':'application/json'},body:JSON.stringify({username:un,password:pw})
     });
     const d=await r.json();
     if(!d.ok){document.getElementById('authError').textContent=d.error;return}
@@ -516,9 +517,9 @@ function enterLobby(){
   socket.emit('auth',{userId:S.user.id});
 }
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Lobby
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function createRoom(){
   const name=document.getElementById('roomNameInput').value.trim()||`${S.user.username}'s Room`;
   const coins=parseInt(document.getElementById('stakesInput').value)||10;
@@ -533,39 +534,59 @@ function renderRoomList(rooms){
     <div class="room-card">
       <div>
         <div class="room-name">${esc(r.name)}<span class="variant-badge variant-${r.variant}">${r.variant}</span></div>
-        <div class="room-meta">🪙${r.stakes.coins} · ${r.playerCount}/4 players</div>
+        <div class="room-meta">ðª${r.stakes.coins} Â· ${r.playerCount}/4 players</div>
       </div>
       <button class="join-btn" onclick="joinRoom('${r.id}')">Join</button>
     </div>`).join('');
 }
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Waiting Room
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function renderWaiting(room){
   S.room=room;
   document.getElementById('waitingRoomCode').textContent=room.id;
   document.getElementById('waitingVariantLabel').textContent=
-    `Variant: ${room.variant==='COMUNIS'?'COMUNIS (កុម្មុយនិស្ត)':'FREE (សេរី)'}`;
+    `Variant: ${room.variant==='COMUNIS'?'COMUNIS (áá»áááá»ááá·ááá)':'FREE (áááá¸)'}`;
   const slots=document.getElementById('playerSlots');
   slots.innerHTML='';
+  const isHost=room.players[0]?.id===S.user.id;
   for(let i=0;i<4;i++){
     const p=room.players[i];
     const div=document.createElement('div');
-    div.className='player-slot '+(p?'filled':'empty');
-    div.innerHTML=p
-      ?`<div class="slot-name">${esc(p.username)}${p.id===S.user.id?' (You)':''}</div><div class="slot-coins">🪙${p.coins}</div>`
-      :`<div style="font-size:20px">➕</div><div style="font-size:11px">Waiting...</div>`;
+    if(p){
+      div.className='player-slot filled';
+      div.style.position='relative';
+      div.innerHTML=`<div class="slot-name">${esc(p.username)}${p.id===S.user.id?' (You)':''}</div><div class="slot-coins">ðª${p.coins}</div>`;
+      if(isHost && p.isBot){
+        const rm=document.createElement('button');
+        rm.textContent='Ã';
+        rm.style.cssText='position:absolute;top:4px;right:6px;background:none;border:none;color:#f88;font-size:18px;cursor:pointer;line-height:1;padding:0';
+        rm.title='Remove bot';
+        rm.onclick=()=>socket.emit('remove_bot',{userId:S.user.id,roomId:room.id,botId:p.id});
+        div.appendChild(rm);
+      }
+    } else {
+      div.className='player-slot empty';
+      if(isHost){
+        div.innerHTML=`<button onclick="addBot()" style="background:var(--surface2);border:1px dashed #3a6a40;color:var(--text2);padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;width:100%">+ Add Bot ð¤</button>`;
+      } else {
+        div.innerHTML<`<div style="font-size:20px">â</div><div style="font-size:11px">Waiting...</div>`;
+      }
+    }
     slots.appendChild(div);
   }
-  const isHost=room.players[0]?.id===S.user.id;
   const btn=document.getElementById('startBtn');
   btn.disabled=!isHost||room.players.length<2;
   btn.textContent=isHost?t('startGame'):'Waiting for host...';
 }
+function addBot(){
+  if(!S.room)return;
+  socket.emit('add_bot',{userId:S.user.id,roomId:S.room.id});
+}
 function copyRoomCode(){
   const code=document.getElementById('waitingRoomCode').textContent;
-  navigator.clipboard?.writeText(code).then(()=>notify('✅ Room code copied!'));
+  navigator.clipboard?.writeText(code).then(()=>notify('â Room code copied!'));
 }
 function leaveRoom(){
   if(!S.room)return;
@@ -574,9 +595,9 @@ function leaveRoom(){
 }
 function startGame(){socket.emit('start_game',{userId:S.user.id,roomId:S.room.id})}
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Game Screen
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function renderHand(){
   const c=document.getElementById('myHandCards');c.innerHTML='';
   [...S.hand].sort((a,b)=>a-b).forEach((v,i)=>{
@@ -595,8 +616,8 @@ function renderHand(){
 function renderTable(combo){
   const c=document.getElementById('tableCards');c.innerHTML='';
   const lbl=document.getElementById('tableLabel');
-  if(!combo){lbl.textContent=S.gs?.variant==='COMUNIS'?'Table empty (COMUNIS — same suit!)':'Table empty — lead anything';return}
-  lbl.textContent=comboLabel(combo)+' · '+(combo.cards||[]).join(' ');
+  if(!combo){lbl.textContent=S.gs?.variant==='COMUNIS'?'Table empty (COMUNIS â same suit!)':'Table empty â lead anything';return}
+  lbl.textContent=comboLabel(combo)+' Â· '+(combo.cards||[]).join(' ');
   (combo.rawCards||[]).forEach((v,i)=>{
     const el=makeCard(v,'md',false,true);
     el.style.animationDelay=`${i*0.06}s`;
@@ -629,7 +650,7 @@ function renderOpponents(gs,myId){
     inner.innerHTML=`
       <div class="opp-name">${isCurrent?'<span class="turn-dot"></span>':''}${esc(p.username)}${p.finished?` <span class="fin-badge">${posLabel}</span>`:''}</div>
       <div class="opp-cards-row">${cards}${more}</div>
-      <div class="opp-coins">${p.finished?'':('🪙'+p.coins)}</div>`;
+      <div class="opp-coins">${p.finished?'':('ðª'+p.coins)}</div>`;
   });
 }
 
@@ -642,7 +663,7 @@ function updateBtns(){
   const canBomb=gs.bombWindow&&sel.length>0;
   document.getElementById('bombBtn').style.display=canBomb?'block':'none';
   const lbl=document.getElementById('turnLabel');
-  if(mine){lbl.textContent='🟡 '+t('pass').replace('Pass','Your turn!');lbl.className='turn-label';lbl.textContent='🟡 Your turn!'}
+  if(mine){lbl.textContent='ð¡ '+t('pass').replace('Pass','Your turn!');lbl.className='turn-label';lbl.textContent='ð¡ Your turn!'}
   else{const cur=gs.players.find(p=>p.id===gs.currentPlayerId);lbl.textContent=cur?`${cur.username}'s turn`:'...';lbl.className='wait-label'}
 }
 
@@ -658,9 +679,9 @@ function fullUpdate(gs){
   if(me)document.getElementById('gameMyCoins').textContent=me.coins;
 }
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Actions
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function sendPlay(){
   initAudio();
   const cards=[...S.sel];if(!cards.length)return;
@@ -678,9 +699,9 @@ function sendBomb(){
   S.sel.clear();
 }
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Chat
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function toggleChat(){
   S.chatOpen=!S.chatOpen;
   document.getElementById('chatPanel').classList.toggle('open',S.chatOpen);
@@ -723,9 +744,9 @@ function updateChatBadge(){
   b.textContent=S.unread>9?'9+':S.unread;
 }
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Animations
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function animateBomb(){
   const gs=document.getElementById('gameScreen');
   gs.style.animation='bombFlashAnim .6s ease';
@@ -748,22 +769,22 @@ function shakeError(elId){
   setTimeout(()=>el.style.animation='',350);
 }
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Game Over
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function showGameOver(results,isDouble,bombEvents,unplayedPenalty){
   document.getElementById('doubleWinBanner').style.display=isDouble?'block':'none';
   const list=document.getElementById('resultList');
   list.innerHTML=results.map((r,i)=>`
     <div class="result-item" style="animation-delay:${i*.1}s">
       <span class="result-pos">${I18N[lang].pos[i]||''}</span>
-      <span class="result-name">${esc(r.username)}${r.isDouble?'<span class="double-badge">×2</span>':''}</span>
-      <span class="result-delta ${r.delta>=0?'pos':'neg'}">${r.delta>=0?'+':''}${r.delta}🪙</span>
+      <span class="result-name">${esc(r.username)}${r.isDouble?'<span class="double-badge">Ã2</span>':''}</span>
+      <span class="result-delta ${r.delta>=0?'pos':'neg'}">${r.delta>=0?'+':''}${r.delta}ðª</span>
     </div>`).join('');
   // Bomb detail
   let bd='';
-  if(bombEvents?.length)bd+=`💣 ${bombEvents.length} bomb event(s) processed. `;
-  if(unplayedPenalty>0)bd+=`⚠️ 4th place unplayed penalty: ${unplayedPenalty}🪙`;
+  if(bombEvents?.length)bd+=`ð£ ${bombEvents.length} bomb event(s) processed. `;
+  if(unplayedPenalty>0)bd+=`â ï¸ 4th place unplayed penalty: ${unplayedPenalty}ðª`;
   document.getElementById('bombDetail').textContent=bd;
   document.getElementById('gameOverModal').classList.add('active');
 
@@ -783,9 +804,9 @@ function closeGameOver(){
   socket.emit('auth',{userId:S.user.id});
 }
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Socket Events
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 socket.on('room_list',rooms=>renderRoomList(rooms));
 
 socket.on('room_joined',room=>{
@@ -804,9 +825,9 @@ socket.on('game_started',({hand,gameState})=>{
   const vl=document.getElementById('gameVariantLabel');
   vl.textContent=gameState.variant;
   vl.className='variant-label variant-'+gameState.variant;
-  document.getElementById('stakesInfo').textContent=`🪙${gameState.stakes?.coins} stakes`;
+  document.getElementById('stakesInfo').textContent=`ðª${gameState.stakes?.coins} stakes`;
   playSound('deal');
-  setTimeout(()=>{fullUpdate(gameState);notify('Game started! 🃏')},200);
+  setTimeout(()=>{fullUpdate(gameState);notify('Game started! ð')},200);
 });
 
 socket.on('game_state',gs=>{
@@ -814,54 +835,54 @@ socket.on('game_state',gs=>{
 });
 
 socket.on('table_cleared',({leaderId})=>{
-  if(leaderId===S.user.id)notify('✅ Your lead!');
+  if(leaderId===S.user.id)notify('â Your lead!');
 });
 
 socket.on('bomb_window',({playerId})=>{
   const name=S.gs?.players.find(p=>p.id===playerId)?.username||'?';
-  notify(`⚡ ${name} played pair of 2s!`);
-  addSystemMsg(`⚡ ${name} played pair of 2s — Bomb window open!`);
+  notify(`â¡ ${name} played pair of 2s!`);
+  addSystemMsg(`â¡ ${name} played pair of 2s â Bomb window open!`);
 });
 
 socket.on('bombed',({bomberId,victimId,penalty})=>{
   initAudio();animateBomb();playSound('bomb');
   const bn=S.gs?.players.find(p=>p.id===bomberId)?.username||'?';
   const vn=S.gs?.players.find(p=>p.id===victimId)?.username||'?';
-  notify(`💣 ${bn} BOMBED ${vn}! -${penalty}🪙`);
-  addSystemMsg(`💣 ${bn} bombed ${vn} for ${penalty}🪙!`);
+  notify(`ð£ ${bn} BOMBED ${vn}! -${penalty}ðª`);
+  addSystemMsg(`ð£ ${bn} bombed ${vn} for ${penalty}ðª!`);
   S.sel=new Set();
 });
 
 socket.on('player_finished',({playerId,position,username})=>{
-  notify(`🎉 ${username} finished ${I18N[lang].pos[position-1]}!`);
+  notify(`ð ${username} finished ${I18N[lang].pos[position-1]}!`);
   addSystemMsg(`${username} finished ${I18N[lang].pos[position-1]}!`);
   if(playerId===S.user.id){S.hand=[];renderHand()}
 });
 
 socket.on('play_error',msg=>{
-  notify('❌ '+msg);shakeError('myHandCards');
+  notify('â '+msg);shakeError('myHandCards');
 });
-socket.on('error',msg=>notify('⚠️ '+msg));
+socket.on('error',msg=>notify('â ï¸ '+msg));
 
 socket.on('game_over',({results,bombEvents,unplayedPenalty,isDouble})=>{
   showGameOver(results,isDouble,bombEvents,unplayedPenalty);
 });
 
 socket.on('auto_win',({playerId,username,type})=>{
-  const tm={ALL_RED:'All Red ❤️♦️',ALL_BLACK:'All Black ♠️♣️',FOUR_TWOS:'Four 2s! 🃏🃏🃏🃏'};
-  document.getElementById('autoWinMsg').innerHTML=`<b>${esc(username)}</b> — ${tm[type]||type}`;
+  const tm={ALL_RED:'All Red â¤ï¸â¦ï¸',ALL_BLACK:'All Black â ï¸â£ï¸',FOUR_TWOS:'Four 2s! ðððð'};
+  document.getElementById('autoWinMsg').innerHTML=`<b>${esc(username)}</b> â ${tm[type]||type}`;
   document.getElementById('autoWinModal').classList.add('active');
   if(playerId===S.user.id){spawnConfetti();playSound('win')}
-  addSystemMsg(`🏆 ${username} auto-win: ${tm[type]||type}`);
+  addSystemMsg(`ð ${username} auto-win: ${tm[type]||type}`);
   setTimeout(()=>document.getElementById('autoWinModal').classList.remove('active'),5000);
 });
 
 socket.on('chat_history',msgs=>msgs.forEach(m=>addChatMsg(m,true)));
 socket.on('chat_message',msg=>{addChatMsg(msg)});
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Screen / Utility
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -876,9 +897,9 @@ function notify(msg){
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // Init
-// ═══════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 (function init(){
   setLang('en');
   const saved=localStorage.getItem('khmer_user');
