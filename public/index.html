@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>ល្បែងបៀ · Khmer Card Game</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+<style>
+/* ── Reset ─────────────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --green:#1a5c2a;--green2:#2d7a40;--green3:#3d9e55;
+  --gold:#f5c842;--gold2:#e0a820;
+  --red:#d32f2f;--blue:#1565c0;
+  --dark:#0d1f12;--surface:#1e3a24;--surface2:#243d2a;
+  --text:#f0f0e0;--text2:#b0c8b8;
+  --card-red:#c62828;--card-black:#1a1a2e;
+  --shadow:0 4px 16px rgba(0,0,0,.5);--radius:10px;
+}
+html,body{height:100%;overflow:hidden;font-family:'Segoe UI',sans-serif;background:var(--dark);color:var(--text)}
+button{cursor:pointer;border:none;border-radius:var(--radius);font-family:inherit;font-size:14px;transition:all .15s}
+input,select{font-family:inherit;font-size:14px;border:none;border-radius:8px;outline:none}
+
+/* ── Screens ─────────────────────────────────────────────── */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+.screen.active{display:flex}
+
+/* ── Animations ──────────────────────────────────────────── */
+@keyframes cardSlideIn{from{transform:translateY(50px) scale(.85);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+@keyframes bombFlashAnim{0%{background:var(--green)}20%{background:#c62828}50%{background:#ff6600}80%{background:#c62828}100%{background:var(--green)}}
+@keyframes winPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,200,66,0)}50%{box-shadow:0 0 0 24px rgba(245,200,66,.35)}}
+@keyframes confettiFall{0%{transform:translateY(-30px) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+@keyframes dealIn{from{transform:translate(0,-150px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+@keyframes fadeSlideUp{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+/* ── Lang Toggle ─────────────────────────────────────────── */
+.lang-toggle{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:50}
+.lang-btn{padding:5px 11px;background:var(--surface);border-radius:6px;color:var(--text2);font-size:12px}
+.lang-btn.active{background:var(--green3);color:#fff}
+
+/* ── Sound Toggle ────────────────────────────────────────── */
+.sound-btn{padding:5px 10px;background:var(--surface);border-radius:6px;color:var(--text2);font-size:14px;position:absolute;top:12px;left:12px;z-index:50}
+
+/* ══ AUTH ════════════════════════════════════════════════ */
+#authScreen{background:linear-gradient(160deg,#0d2e15,#0d1f12)}
+.auth-box{background:var(--surface);padding:32px 28px;border-radius:16px;width:100%;max-width:360px;box-shadow:var(--shadow)}
+.auth-logo{text-align:center;margin-bottom:24px}
+.auth-logo .title{font-size:28px;font-weight:700;color:var(--gold)}
+.auth-logo .sub{font-size:13px;color:var(--text2);margin-top:4px}
+.tab-row{display:flex;gap:8px;margin-bottom:20px}
+.tab{flex:1;padding:10px;background:var(--surface2);color:var(--text2);border-radius:8px;font-weight:600}
+.tab.active{background:var(--green3);color:#fff}
+.auth-form{display:flex;flex-direction:column;gap:12px}
+.auth-form input{padding:12px 14px;background:var(--surface2);color:var(--text);border:1px solid #2a4a30}
+.auth-btn{padding:13px;background:var(--gold);color:#1a1a00;font-weight:700;font-size:16px;border-radius:10px}
+.auth-btn:active{background:var(--gold2)}
+.auth-error{color:#ff6b6b;font-size:13px;text-align:center;min-height:18px}
+
+/* ══ LOBBY ═══════════════════════════════════════════════ */
+#lobbyScreen{background:linear-gradient(160deg,#0d2e15,#0d1f12);padding:0}
+.lobby-header{width:100%;background:var(--surface);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--green2)}
+.lobby-header .logo{font-size:18px;font-weight:700;color:var(--gold)}
+.user-info{display:flex;align-items:center;gap:10px;font-size:13px}
+.coins{color:var(--gold);font-weight:700}
+.diamonds{color:#7ecfff;font-weight:700}
+.lobby-body{flex:1;width:100%;max-width:600px;overflow-y:auto;padding:16px}
+.section-title{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.create-room-box{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:20px}
+.create-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.create-row input,.create-row select{padding:10px 12px;background:var(--surface2);color:var(--text);border:1px solid #2a4a30}
+.create-row select option{background:var(--surface2)}
+.stakes-input{width:80px!important;flex:0 0 80px!important}
+.create-btn{padding:10px 18px;background:var(--gold);color:#1a1a00;font-weight:700;white-space:nowrap;border-radius:8px}
+.room-list{display:flex;flex-direction:column;gap:8px}
+.room-card{background:var(--surface);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border:1px solid #2a4a30;animation:fadeSlideUp .25s ease}
+.room-card .room-name{font-weight:600}
+.room-card .room-meta{font-size:12px;color:var(--text2);margin-top:3px}
+.variant-badge{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:6px}
+.variant-FREE{background:#1a5c2a;color:#7fff7f}
+.variant-COMUNIS{background:#1a2a5c;color:#7fafff}
+.join-btn{padding:8px 18px;background:var(--green3);color:#fff;font-weight:600;border-radius:8px}
+.no-rooms{text-align:center;color:var(--text2);padding:40px 0;font-size:14px}
+
+/* ══ WAITING ══════════════════════════════════════════════ */
+#waitingScreen{background:linear-gradient(160deg,#0d2e15,#0d1f12)}
+.waiting-box{background:var(--surface);border-radius:16px;padding:24px;width:100%;max-width:420px}
+.waiting-box h2{font-size:18px;color:var(--gold);margin-bottom:4px}
+.room-code{font-size:30px;font-weight:900;color:#fff;letter-spacing:4px;background:var(--surface2);padding:10px 20px;border-radius:8px;margin:12px 0;text-align:center;cursor:pointer}
+.copy-hint{font-size:11px;color:var(--text2);text-align:center;margin-top:-8px;margin-bottom:8px}
+.player-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.player-slot{background:var(--surface2);border-radius:8px;padding:12px;text-align:center;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.player-slot.filled{border:1px solid var(--green3)}
+.player-slot .slot-name{font-weight:600;font-size:14px}
+.player-slot .slot-coins{font-size:12px;color:var(--gold);margin-top:3px}
+.player-slot.empty{border:1px dashed #2a4a30;color:var(--text2)}
+.waiting-actions{display:flex;gap:10px;margin-top:16px}
+.start-btn{flex:1;padding:14px;background:var(--gold);color:#1a1a00;font-weight:700;font-size:16px;border-radius:10px}
+.start-btn:disabled{background:#555;color:#888;cursor:default}
+.leave-btn{padding:14px 20px;background:var(--surface2);color:var(--text2);font-weight:600;border-radius:10px}
+
+/* ══ GAME ════════════════════════════════════════════════ */
+#gameScreen{background:var(--green);padding:0;overflow:hidden}
+.game-table{width:100%;height:100%;display:grid;grid-template-rows:auto 1fr auto;max-height:100dvh}
+
+/* Top bar */
+.game-top{background:rgba(0,0,0,.45);padding:6px 10px;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;flex-wrap:nowrap}
+.game-top .room-id{color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
+.game-top .variant-label{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
+.game-top .my-coins{color:var(--gold);font-weight:700;white-space:nowrap}
+.chat-toggle-btn{background:none;font-size:18px;padding:2px 6px;border-radius:6px;position:relative}
+.chat-badge{position:absolute;top:-2px;right:-2px;background:#f44336;color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 4px;display:none}
+
+/* Middle: opponents + table */
+.game-middle{display:grid;grid-template-areas:"top top top" "left center right";grid-template-columns:72px 1fr 72px;grid-template-rows:auto 1fr;gap:4px;padding:4px;overflow:hidden}
+
+/* Opponent areas */
+.opp-area{background:rgba(0,0,0,.25);border-radius:8px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.opp-area.opp-top{grid-area:top;flex-direction:row;justify-content:center;gap:16px;min-height:70px}
+.opp-area.opp-left{grid-area:left}
+.opp-area.opp-right{grid-area:right}
+.opp-name{font-size:10px;font-weight:600;color:#fff;text-align:center;max-width:65px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.opp-cards-row{display:flex;flex-wrap:wrap;gap:2px;justify-content:center}
+.opp-card-back{width:14px;height:20px;background:linear-gradient(135deg,#1a3a7a,#2a5db0);border-radius:3px;border:1px solid rgba(255,255,255,.2)}
+.turn-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:pulse 1s infinite;display:inline-block;margin-right:3px;flex-shrink:0}
+.fin-badge{font-size:9px;color:#7ecfff;font-weight:700}
+.opp-coins{font-size:10px;color:var(--gold)}
+
+/* Center table */
+.table-center{grid-area:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:6px}
+.table-cards{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center;min-height:70px}
+.table-label{font-size:11px;color:rgba(255,255,255,.7);text-align:center}
+.stakes-info{font-size:10px;color:var(--gold)}
+.bomb-hint{font-size:12px;color:#ff6b6b;animation:blink .6s infinite;font-weight:700;text-align:center}
+
+/* Cards */
+.card{display:inline-flex;flex-direction:column;align-items:center;justify-content:space-between;background:#fff;border-radius:6px;border:1.5px solid #ddd;cursor:pointer;user-select:none;transition:transform .12s,box-shadow .12s;position:relative;font-weight:700}
+.card.red .rank,.card.red .suit-sym{color:var(--card-red)}
+.card.black .rank,.card.black .suit-sym{color:var(--card-black)}
+.card.selected{transform:translateY(-10px);box-shadow:0 0 0 2.5px var(--gold),0 6px 18px rgba(0,0,0,.5)}
+.card.table-card{cursor:default;animation:cardSlideIn .2s ease both}
+.card .rank{font-size:9px;line-height:1;padding:2px 3px}
+.card .suit-sym{font-size:11px;line-height:1;padding:2px 3px}
+.card.sm{width:26px;height:38px}
+.card.md{width:34px;height:50px}
+.card.lg{width:42px;height:62px}
+
+/* My hand */
+.my-hand-area{background:rgba(0,0,0,.35);padding:8px 8px 6px;display:flex;flex-direction:column;gap:6px}
+.my-hand-cards{display:flex;overflow-x:auto;padding:4px 4px 2px;align-items:flex-end;min-height:66px;gap:0;scrollbar-width:none}
+.my-hand-cards::-webkit-scrollbar{display:none}
+.my-hand-cards .card{flex-shrink:0;margin-right:-8px;animation:dealIn .3s ease both}
+.my-hand-cards .card:last-child{margin-right:0}
+.action-row{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
+.action-btn{padding:9px 16px;border-radius:10px;font-weight:700;font-size:13px}
+.btn-play{background:var(--gold);color:#1a1a00}
+.btn-play:disabled{background:#555;color:#888}
+.btn-pass{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2)}
+.btn-pass:disabled{opacity:.4}
+.btn-bomb{background:#c62828;color:#fff;animation:pulse .5s infinite}
+.turn-label{font-size:11px;font-weight:700;color:var(--gold);text-align:center}
+.wait-label{font-size:11px;color:rgba(255,255,255,.5);text-align:center}
+
+/* ── Chat Panel ──────────────────────────────────────────── */
+.chat-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:none}
+.chat-overlay.open{display:block}
+.chat-panel{position:fixed;bottom:0;left:0;right:0;max-height:70vh;background:var(--surface);border-radius:16px 16px 0 0;z-index:90;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s ease}
+.chat-panel.open{transform:translateY(0)}
+.chat-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2a4a30}
+.chat-header h3{font-size:15px;color:var(--gold)}
+.chat-close{background:none;color:var(--text2);font-size:20px;padding:0 4px}
+.chat-messages{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;min-height:120px;max-height:calc(70vh - 110px)}
+.chat-msg{font-size:13px;line-height:1.4}
+.chat-msg .msg-user{font-weight:700;color:var(--green3);margin-right:6px}
+.chat-msg .msg-user.me{color:var(--gold)}
+.chat-msg .msg-text{color:var(--text)}
+.chat-msg .msg-time{font-size:10px;color:var(--text2);margin-left:4px}
+.chat-system{font-size:11px;color:var(--text2);font-style:italic;text-align:center}
+.chat-input-row{padding:10px 12px;display:flex;gap:8px;border-top:1px solid #2a4a30}
+.chat-input-row input{flex:1;padding:10px 12px;background:var(--surface2);color:var(--text);border:1px solid #2a4a30;border-radius:8px}
+.chat-send{padding:10px 16px;background:var(--green3);color:#fff;font-weight:700;border-radius:8px}
+
+/* ── Notification ────────────────────────────────────────── */
+.notif{position:fixed;top:56px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.88);color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;pointer-events:none;transition:opacity .3s;white-space:nowrap}
+.notif.hidden{opacity:0}
+
+/* ── Modals ──────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal-overlay.active{display:flex}
+.modal{background:var(--surface);border-radius:16px;padding:24px;width:100%;max-width:400px;text-align:center}
+.modal h2{font-size:20px;color:var(--gold);margin-bottom:16px}
+.result-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.result-item{display:flex;align-items:center;background:var(--surface2);padding:10px 14px;border-radius:8px;gap:8px;animation:fadeSlideUp .3s ease both}
+.result-pos{font-size:18px;flex-shrink:0}
+.result-name{font-weight:600;flex:1;text-align:left;font-size:14px}
+.result-delta{font-weight:700;font-size:15px}
+.result-delta.pos{color:#4caf50}
+.result-delta.neg{color:#f44336}
+.double-badge{background:var(--gold);color:#1a1a00;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:700}
+.modal-btn{padding:12px 32px;background:var(--gold);color:#1a1a00;font-weight:700;border-radius:10px;font-size:15px}
+.auto-win-modal .aw-icon{font-size:52px;margin:8px 0}
+.bomb-detail{font-size:12px;color:var(--text2);margin-bottom:12px}
+
+/* Responsive */
+@media(min-width:600px){
+  .game-middle{grid-template-columns:100px 1fr 100px}
+  .opp-card-back{width:18px;height:26px}
+  .card.sm{width:32px;height:46px} .card.md{width:40px;height:58px} .card.lg{width:50px;height:72px}
+  .card.sm .rank{font-size:11px} .card.sm .suit-sym{font-size:13px}
+  .card.lg .rank{font-size:13px} .card.lg .suit-sym{font-size:16px}
+  .chat-panel{max-width:480px;left:50%;transform:translateX(-50%) translateY(100%);right:auto;border-radius:16px;bottom:16px}
+  .chat-panel.open{transform:translateX(-50%) translateY(0)}
+}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle" id="langToggle">
+  <button class="lang-btn active" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" onclick="setLang('km')">ខ្មែរ</button>
+</div>
+<button class="sound-btn" id="soundBtn" onclick="toggleSound()" title="Toggle sound">🔊</button>
+
+<!-- ══ AUTH ════════════════════════════════════════════════ -->
+<div class="screen active" id="authScreen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="title">🃏 ល្បែងបៀ</div>
+      <div class="sub" data-i18n="subtitle">Khmer Card Game</div>
+    </div>
+    <div class="tab-row">
+      <button class="tab active" id="loginTab" onclick="showTab('login')" data-i18n="login">Login</button>
+      <button class="tab" id="registerTab" onclick="showTab('register')" data-i18n="register">Register</button>
+    </div>
+    <form class="auth-form" onsubmit="submitAuth(event)">
+      <input id="authUsername" type="text" placeholder="Username" autocomplete="username" required/>
+      <input id="authPassword" type="password" placeholder="Password" autocomplete="current-password" required/>
+      <div class="auth-error" id="authError"></div>
+      <button class="auth-btn" type="submit" id="authSubmitBtn" data-i18n="login">Login</button>
+    </form>
+  </div>
+</div>
+
+<!-- ══ LOBBY ═══════════════════════════════════════════════ -->
+<div class="screen" id="lobbyScreen">
+  <div class="lobby-header">
+    <div class="logo">🃏 ល្បែងបៀ</div>
+    <div class="user-info">
+      <span id="lobbyUsername"></span>
+      <span class="coins">🪙 <span id="lobbyCoins">0</span></span>
+      <span class="diamonds">💎 <span id="lobbyDiamonds">0</span></span>
+    </div>
+  </div>
+  <div class="lobby-body">
+    <div class="create-room-box">
+      <div class="section-title" data-i18n="createRoom">Create Room</div>
+      <div class="create-row">
+        <input id="roomNameInput" type="text" placeholder="Room name" style="flex:1;min-width:100px"/>
+        <input id="stakesInput" type="number" class="stakes-input" value="10" min="1" max="1000"/>
+        <select id="variantSelect">
+          <option value="FREE">FREE (សេរី)</option>
+          <option value="COMUNIS">COMUNIS (កុម្មុយនិស្ត)</option>
+        </select>
+        <button class="create-btn" onclick="createRoom()">Create</button>
+      </div>
+    </div>
+    <div class="section-title" data-i18n="openRooms">Open Rooms</div>
+    <div class="room-list" id="roomList">
+      <div class="no-rooms" data-i18n="noRooms">No open rooms. Create one!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WAITING ═════════════════════════════════════════════ -->
+<div class="screen" id="waitingScreen">
+  <div class="waiting-box">
+    <h2 data-i18n="waitingRoom">Waiting Room</h2>
+    <div id="waitingVariantLabel" style="font-size:12px;color:var(--text2);margin-bottom:4px"></div>
+    <div style="font-size:13px;color:var(--text2)" data-i18n="shareCode">Share this code:</div>
+    <div class="room-code" id="waitingRoomCode" onclick="copyRoomCode()" title="Click to copy">------</div>
+    <div class="copy-hint" data-i18n="clickCopy">Tap to copy</div>
+    <div class="section-title" data-i18n="players">Players (2–4)</div>
+    <div class="player-slots" id="playerSlots"></div>
+    <div class="waiting-actions">
+      <button class="leave-btn" onclick="leaveRoom()" data-i18n="leave">Leave</button>
+      <button class="start-btn" id="startBtn" onclick="startGame()" disabled data-i18n="startGame">Start Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GAME ════════════════════════════════════════════════ -->
+<div class="screen" id="gameScreen">
+  <div class="game-table" id="gameTable">
+    <!-- Top bar -->
+    <div class="game-top">
+      <span class="room-id" id="gameRoomId"></span>
+      <span class="variant-label" id="gameVariantLabel"></span>
+      <span id="turnLabel" class="wait-label">...</span>
+      <span class="my-coins">🪙<span id="gameMyCoins">0</span></span>
+      <button class="chat-toggle-btn" onclick="toggleChat()" title="Chat">💬<span class="chat-badge" id="chatBadge"></span></button>
+    </div>
+
+    <!-- Middle area -->
+    <div class="game-middle">
+      <div class="opp-area opp-top" id="oppTop" style="display:none">
+        <div id="oppTopInner"></div>
+      </div>
+      <div class="opp-area opp-left" id="oppLeft" style="display:none">
+        <div id="oppLeftInner"></div>
+      </div>
+      <div class="table-center">
+        <div class="stakes-info" id="stakesInfo"></div>
+        <div class="table-label" id="tableLabel">Table is empty</div>
+        <div class="table-cards" id="tableCards"></div>
+        <div class="bomb-hint" id="bombHint" style="display:none">⚡ Pair of 2s — Bomb!</div>
+      </div>
+      <div class="opp-area opp-right" id="oppRight" style="display:none">
+        <div id="oppRightInner"></div>
+      </div>
+    </div>
+
+    <!-- My hand -->
+    <div class="my-hand-area">
+      <div class="my-hand-cards" id="myHandCards"></div>
+      <div class="action-row">
+        <button class="action-btn btn-pass" id="passBtn" onclick="sendPass()" disabled data-i18n="pass">Pass</button>
+        <button class="action-btn btn-play" id="playBtn" onclick="sendPlay()" disabled data-i18n="play">Play</button>
+        <button class="action-btn btn-bomb" id="bombBtn" onclick="sendBomb()" style="display:none" data-i18n="bomb">💣 Bomb!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Chat Panel ──────────────────────────────────────────── -->
+<div class="chat-overlay" id="chatOverlay" onclick="toggleChat()"></div>
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-header">
+    <h3>💬 Chat</h3>
+    <button class="chat-close" onclick="toggleChat()">✕</button>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input-row">
+    <input id="chatInput" type="text" placeholder="Type a message..." maxlength="200"
+      onkeydown="if(event.key==='Enter')sendChat()"/>
+    <button class="chat-send" onclick="sendChat()">Send</button>
+  </div>
+</div>
+
+<!-- ── Modals ──────────────────────────────────────────────── -->
+<div class="modal-overlay" id="gameOverModal">
+  <div class="modal">
+    <h2 data-i18n="gameOver">Game Over! 🏆</h2>
+    <div id="doubleWinBanner" style="display:none;color:var(--gold);font-weight:700;margin-bottom:10px;font-size:15px">⚡ Double Win!</div>
+    <div class="result-list" id="resultList"></div>
+    <div class="bomb-detail" id="bombDetail"></div>
+    <button class="modal-btn" onclick="closeGameOver()" data-i18n="backToLobby">Back to Lobby</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="autoWinModal">
+  <div class="modal auto-win-modal">
+    <h2 data-i18n="autoWin">Auto Win! 🏆</h2>
+    <div class="aw-icon">🎉</div>
+    <div id="autoWinMsg" style="margin-bottom:16px;font-size:15px"></div>
+    <div style="font-size:12px;color:var(--text2)" data-i18n="gameResetting">Game resetting in 5s...</div>
+  </div>
+</div>
+
+<div class="notif hidden" id="notif"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// i18n
+// ═══════════════════════════════════════════════════════════
+const I18N = {
+  en:{
+    subtitle:'Khmer Card Game · 4 Players',
+    login:'Login',register:'Register',
+    createRoom:'Create Room',openRooms:'Open Rooms',noRooms:'No open rooms — create one!',
+    waitingRoom:'Waiting Room',shareCode:'Share this room code:',clickCopy:'Tap to copy',
+    players:'Players (2–4)',leave:'Leave',startGame:'Start Game',
+    pass:'Pass',play:'Play',bomb:'💣 Bomb!',
+    gameOver:'Game Over! 🏆',backToLobby:'Back to Lobby',
+    autoWin:'Auto Win!',gameResetting:'Game resetting in 5s...',
+    pos:['1st 🥇','2nd 🥈','3rd 🥉','4th 😭'],finishes:'done',
+  },
+  km:{
+    subtitle:'ល្បែងបៀ · ៤នាក់',
+    login:'ចូល',register:'ចុះឈ្មោះ',
+    createRoom:'បង្កើតបន្ទប់',openRooms:'បន្ទប់បើក',noRooms:'គ្មានបន្ទប់ — បង្កើតថ្មី!',
+    waitingRoom:'បន្ទប់រង់ចាំ',shareCode:'ចែករំលែកលេខកូដ:',clickCopy:'ចុចដើម្បីចម្លង',
+    players:'អ្នកលេង (២–៤)',leave:'ចេញ',startGame:'ចាប់ផ្ដើម',
+    pass:'ប្ដូរ',play:'លេង',bomb:'💣 Bomb!',
+    gameOver:'ល្បែងចប់! 🏆',backToLobby:'ត្រឡប់',
+    autoWin:'ឈ្នះស្វ័យប្រវត្តិ!',gameResetting:'ចាប់ផ្ដើមឡើងវិញ...',
+    pos:['ទី១ 🥇','ទី២ 🥈','ទី៣ 🥉','ទី៤ 😭'],finishes:'ចប់',
+  }
+};
+let lang='en';
+function setLang(l){
+  lang=l;
+  document.querySelectorAll('.lang-btn').forEach((b,i)=>b.classList.toggle('active',['en','km'][i]===l));
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(I18N[l][k])el.textContent=I18N[l][k]});
+}
+function t(k){return I18N[lang][k]||k}
+
+// ═══════════════════════════════════════════════════════════
+// Sound Engine (Web Audio API — no files needed)
+// ═══════════════════════════════════════════════════════════
+let audioCtx=null,soundEnabled=true;
+function initAudio(){
+  if(audioCtx)return;
+  try{audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}
+}
+function toggleSound(){
+  soundEnabled=!soundEnabled;
+  document.getElementById('soundBtn').textContent=soundEnabled?'🔊':'🔇';
+}
+function playSound(type){
+  if(!soundEnabled||!audioCtx)return;
+  try{
+    const t=audioCtx.currentTime;
+    const beep=(freq,dur,vol=0.25,wave='sine',attack=0)=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.connect(g);g.connect(audioCtx.destination);
+      o.type=wave;o.frequency.setValueAtTime(freq,t+attack);
+      g.gain.setValueAtTime(vol,t+attack);
+      g.gain.exponentialRampToValueAtTime(0.001,t+attack+dur);
+      o.start(t+attack);o.stop(t+attack+dur+0.01);
+    };
+    const slide=(f1,f2,dur,vol=0.25,wave='sine')=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.connect(g);g.connect(audioCtx.destination);
+      o.type=wave;o.frequency.setValueAtTime(f1,t);
+      o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+      g.gain.setValueAtTime(vol,t);
+      g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      o.start(t);o.stop(t+dur+0.01);
+    };
+    switch(type){
+      case 'card': slide(700,350,.1,.2); break;
+      case 'pass': beep(250,.08,.1); break;
+      case 'select': beep(600,.05,.1); break;
+      case 'deal': [0,.06,.12,.18].forEach((d,i)=>beep(800+i*100,.05,.12,'triangle',d)); break;
+      case 'bomb':
+        slide(200,40,.6,.4,'sawtooth');
+        beep(80,.5,.2,'square');
+        break;
+      case 'win': [523,659,784,1047].forEach((f,i)=>beep(f,.25,.3,'sine',i*.15)); break;
+      case 'lose': [400,320,260,200].forEach((f,i)=>beep(f,.2,.2,'sine',i*.15)); break;
+      case 'chat': beep(900,.05,.08); break;
+    }
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════
+// Card Helpers (client-side)
+// ═══════════════════════════════════════════════════════════
+const RANKS=['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
+const SYMS=['♣','♠','♦','♥'];
+function cRank(v){return Math.floor(v/4)}
+function cSuit(v){return v%4}
+function isRed(v){return cSuit(v)>=2}
+function cardName(v){return RANKS[cRank(v)]+SYMS[cSuit(v)]}
+
+function makeCard(v,size='md',selected=false,isTable=false){
+  const el=document.createElement('div');
+  el.className=`card ${size} ${isRed(v)?'red':'black'}${selected?' selected':''}${isTable?' table-card':''}`;
+  el.dataset.card=v;
+  const r=document.createElement('div');r.className='rank';r.textContent=RANKS[cRank(v)];
+  const s=document.createElement('div');s.className='suit-sym';s.textContent=SYMS[cSuit(v)];
+  el.appendChild(r);el.appendChild(s);
+  return el;
+}
+
+// ═══════════════════════════════════════════════════════════
+// App State
+// ═══════════════════════════════════════════════════════════
+const socket=io();
+const S={user:null,room:null,gs:null,hand:[],sel:new Set(),chatOpen:false,unread:0};
+
+// ═══════════════════════════════════════════════════════════
+// Auth
+// ═══════════════════════════════════════════════════════════
+let authTab='login';
+function showTab(tab){
+  authTab=tab;
+  document.getElementById('loginTab').classList.toggle('active',tab==='login');
+  document.getElementById('registerTab').classList.toggle('active',tab==='register');
+  document.getElementById('authSubmitBtn').textContent=t(tab);
+  document.getElementById('authError').textContent='';
+}
+async function submitAuth(e){
+  e.preventDefault();initAudio();
+  const un=document.getElementById('authUsername').value.trim();
+  const pw=document.getElementById('authPassword').value;
+  try{
+    const r=await fetch(authTab==='login'?'/api/login':'/api/register',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:un,password:pw})
+    });
+    const d=await r.json();
+    if(!d.ok){document.getElementById('authError').textContent=d.error;return}
+    S.user=d.user;
+    localStorage.setItem('khmer_user',JSON.stringify(d.user));
+    enterLobby();
+  }catch(e){document.getElementById('authError').textContent='Connection error'}
+}
+function enterLobby(){
+  showScreen('lobbyScreen');
+  document.getElementById('lobbyUsername').textContent=S.user.username;
+  document.getElementById('lobbyCoins').textContent=S.user.coins;
+  document.getElementById('lobbyDiamonds').textContent=S.user.diamonds;
+  socket.emit('auth',{userId:S.user.id});
+}
+
+// ═══════════════════════════════════════════════════════════
+// Lobby
+// ═══════════════════════════════════════════════════════════
+function createRoom(){
+  const name=document.getElementById('roomNameInput').value.trim()||`${S.user.username}'s Room`;
+  const coins=parseInt(document.getElementById('stakesInput').value)||10;
+  const variant=document.getElementById('variantSelect').value;
+  socket.emit('create_room',{userId:S.user.id,stakes:{coins},roomName:name,variant});
+}
+function joinRoom(roomId){socket.emit('join_room',{userId:S.user.id,roomId})}
+function renderRoomList(rooms){
+  const c=document.getElementById('roomList');
+  if(!rooms.length){c.innerHTML=`<div class="no-rooms">${t('noRooms')}</div>`;return}
+  c.innerHTML=rooms.map(r=>`
+    <div class="room-card">
+      <div>
+        <div class="room-name">${esc(r.name)}<span class="variant-badge variant-${r.variant}">${r.variant}</span></div>
+        <div class="room-meta">🪙${r.stakes.coins} · ${r.playerCount}/4 players</div>
+      </div>
+      <button class="join-btn" onclick="joinRoom('${r.id}')">Join</button>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// Waiting Room
+// ═══════════════════════════════════════════════════════════
+function renderWaiting(room){
+  S.room=room;
+  document.getElementById('waitingRoomCode').textContent=room.id;
+  document.getElementById('waitingVariantLabel').textContent=
+    `Variant: ${room.variant==='COMUNIS'?'COMUNIS (កុម្មុយនិស្ត)':'FREE (សេរី)'}`;
+  const slots=document.getElementById('playerSlots');
+  slots.innerHTML='';
+  for(let i=0;i<4;i++){
+    const p=room.players[i];
+    const div=document.createElement('div');
+    div.className='player-slot '+(p?'filled':'empty');
+    div.innerHTML=p
+      ?`<div class="slot-name">${esc(p.username)}${p.id===S.user.id?' (You)':''}</div><div class="slot-coins">🪙${p.coins}</div>`
+      :`<div style="font-size:20px">➕</div><div style="font-size:11px">Waiting...</div>`;
+    slots.appendChild(div);
+  }
+  const isHost=room.players[0]?.id===S.user.id;
+  const btn=document.getElementById('startBtn');
+  btn.disabled=!isHost||room.players.length<2;
+  btn.textContent=isHost?t('startGame'):'Waiting for host...';
+}
+function copyRoomCode(){
+  const code=document.getElementById('waitingRoomCode').textContent;
+  navigator.clipboard?.writeText(code).then(()=>notify('✅ Room code copied!'));
+}
+function leaveRoom(){
+  if(!S.room)return;
+  socket.emit('leave_room',{userId:S.user.id,roomId:S.room.id});
+  S.room=null;showScreen('lobbyScreen');
+}
+function startGame(){socket.emit('start_game',{userId:S.user.id,roomId:S.room.id})}
+
+// ═══════════════════════════════════════════════════════════
+// Game Screen
+// ═══════════════════════════════════════════════════════════
+function renderHand(){
+  const c=document.getElementById('myHandCards');c.innerHTML='';
+  [...S.hand].sort((a,b)=>a-b).forEach((v,i)=>{
+    const el=makeCard(v,'lg',S.sel.has(v));
+    el.style.animationDelay=`${i*0.04}s`;
+    el.addEventListener('click',()=>{
+      initAudio();playSound('select');
+      if(S.sel.has(v)){S.sel.delete(v);el.classList.remove('selected');el.style.transform=''}
+      else{S.sel.add(v);el.classList.add('selected')}
+      updateBtns();
+    });
+    c.appendChild(el);
+  });
+}
+
+function renderTable(combo){
+  const c=document.getElementById('tableCards');c.innerHTML='';
+  const lbl=document.getElementById('tableLabel');
+  if(!combo){lbl.textContent=S.gs?.variant==='COMUNIS'?'Table empty (COMUNIS — same suit!)':'Table empty — lead anything';return}
+  lbl.textContent=comboLabel(combo)+' · '+(combo.cards||[]).join(' ');
+  (combo.rawCards||[]).forEach((v,i)=>{
+    const el=makeCard(v,'md',false,true);
+    el.style.animationDelay=`${i*0.06}s`;
+    c.appendChild(el);
+  });
+}
+
+const COMBO_LABELS={SINGLE:'Single',PAIR:'Pair',TRIPLE:'Three of a Kind',QUAD:'Four of a Kind',
+  FULL_HOUSE:'Full House',MULTI_PAIR:'Multi-Pair',STRAIGHT:'Straight',SUITED_STRAIGHT:'Suited Straight'};
+function comboLabel(c){return COMBO_LABELS[c?.type]||c?.type||''}
+
+function renderOpponents(gs,myId){
+  const others=gs.players.filter(p=>p.id!==myId);
+  const defs=[
+    {area:'oppTop',inner:'oppTopInner'},
+    {area:'oppLeft',inner:'oppLeftInner'},
+    {area:'oppRight',inner:'oppRightInner'}
+  ];
+  defs.forEach((d,i)=>{
+    const area=document.getElementById(d.area);
+    const inner=document.getElementById(d.inner);
+    const p=others[i];
+    if(!p){area.style.display='none';return}
+    area.style.display='flex';
+    const isCurrent=gs.currentPlayerId===p.id;
+    const pos=gs.finishOrder?.indexOf(p.id);
+    const posLabel=pos>=0?I18N[lang].pos[pos]:'';
+    const cards=Array(Math.min(p.cardCount,10)).fill('<div class="opp-card-back"></div>').join('');
+    const more=p.cardCount>10?`<span style="font-size:9px;color:var(--text2)">+${p.cardCount-10}</span>`:'';
+    inner.innerHTML=`
+      <div class="opp-name">${isCurrent?'<span class="turn-dot"></span>':''}${esc(p.username)}${p.finished?` <span class="fin-badge">${posLabel}</span>`:''}</div>
+      <div class="opp-cards-row">${cards}${more}</div>
+      <div class="opp-coins">${p.finished?'':('🪙'+p.coins)}</div>`;
+  });
+}
+
+function updateBtns(){
+  const gs=S.gs;if(!gs)return;
+  const mine=gs.currentPlayerId===S.user.id;
+  const sel=[...S.sel];
+  document.getElementById('passBtn').disabled=!mine||!gs.currentCombo;
+  document.getElementById('playBtn').disabled=!mine||!sel.length;
+  const canBomb=gs.bombWindow&&sel.length>0;
+  document.getElementById('bombBtn').style.display=canBomb?'block':'none';
+  const lbl=document.getElementById('turnLabel');
+  if(mine){lbl.textContent='🟡 '+t('pass').replace('Pass','Your turn!');lbl.className='turn-label';lbl.textContent='🟡 Your turn!'}
+  else{const cur=gs.players.find(p=>p.id===gs.currentPlayerId);lbl.textContent=cur?`${cur.username}'s turn`:'...';lbl.className='wait-label'}
+}
+
+function fullUpdate(gs){
+  S.gs=gs;
+  if(gs.myHand)S.hand=gs.myHand;
+  renderHand();
+  renderTable(gs.currentCombo);
+  renderOpponents(gs,S.user.id);
+  updateBtns();
+  document.getElementById('bombHint').style.display=gs.bombWindow?'block':'none';
+  const me=gs.players.find(p=>p.id===S.user.id);
+  if(me)document.getElementById('gameMyCoins').textContent=me.coins;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Actions
+// ═══════════════════════════════════════════════════════════
+function sendPlay(){
+  initAudio();
+  const cards=[...S.sel];if(!cards.length)return;
+  socket.emit('play_cards',{userId:S.user.id,roomId:S.room.id,cards});
+  S.sel.clear();
+}
+function sendPass(){
+  initAudio();playSound('pass');
+  socket.emit('pass',{userId:S.user.id,roomId:S.room.id});
+}
+function sendBomb(){
+  initAudio();
+  const cards=[...S.sel];if(!cards.length)return;
+  socket.emit('bomb',{userId:S.user.id,roomId:S.room.id,cards});
+  S.sel.clear();
+}
+
+// ═══════════════════════════════════════════════════════════
+// Chat
+// ═══════════════════════════════════════════════════════════
+function toggleChat(){
+  S.chatOpen=!S.chatOpen;
+  document.getElementById('chatPanel').classList.toggle('open',S.chatOpen);
+  document.getElementById('chatOverlay').classList.toggle('open',S.chatOpen);
+  if(S.chatOpen){
+    S.unread=0;updateChatBadge();
+    setTimeout(()=>document.getElementById('chatInput').focus(),300);
+    scrollChat();
+  }
+}
+function sendChat(){
+  const inp=document.getElementById('chatInput');
+  const msg=inp.value.trim();
+  if(!msg||!S.room)return;
+  socket.emit('chat',{userId:S.user.id,roomId:S.room.id,message:msg});
+  inp.value='';
+}
+function addChatMsg(msg,isHistory=false){
+  const c=document.getElementById('chatMessages');
+  const isMe=msg.username===S.user?.username;
+  const div=document.createElement('div');
+  div.className='chat-msg';
+  const time=new Date(msg.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  div.innerHTML=`<span class="msg-user${isMe?' me':''}">${esc(msg.username)}</span><span class="msg-text">${esc(msg.text)}</span><span class="msg-time">${time}</span>`;
+  c.appendChild(div);
+  if(!isHistory){
+    scrollChat();
+    if(!S.chatOpen&&!isMe){S.unread++;updateChatBadge();playSound('chat')}
+  }
+}
+function addSystemMsg(text){
+  const c=document.getElementById('chatMessages');
+  const div=document.createElement('div');div.className='chat-system';div.textContent=text;
+  c.appendChild(div);scrollChat();
+}
+function scrollChat(){const c=document.getElementById('chatMessages');c.scrollTop=c.scrollHeight}
+function updateChatBadge(){
+  const b=document.getElementById('chatBadge');
+  b.style.display=S.unread>0?'block':'none';
+  b.textContent=S.unread>9?'9+':S.unread;
+}
+
+// ═══════════════════════════════════════════════════════════
+// Animations
+// ═══════════════════════════════════════════════════════════
+function animateBomb(){
+  const gs=document.getElementById('gameScreen');
+  gs.style.animation='bombFlashAnim .6s ease';
+  setTimeout(()=>gs.style.animation='',650);
+}
+function spawnConfetti(){
+  const colors=['#f5c842','#ff4444','#44ff44','#4499ff','#ff44ff','#ff8800'];
+  for(let i=0;i<50;i++){
+    const el=document.createElement('div');
+    const dur=1.2+Math.random()*2;
+    const delay=Math.random()*.6;
+    el.style.cssText=`position:fixed;width:${6+Math.random()*6}px;height:${6+Math.random()*6}px;border-radius:${Math.random()>.5?'50%':'2px'};background:${colors[Math.floor(Math.random()*colors.length)]};left:${Math.random()*100}vw;top:0;animation:confettiFall ${dur}s linear ${delay}s both;z-index:200;pointer-events:none`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),(dur+delay)*1000+100);
+  }
+}
+function shakeError(elId){
+  const el=document.getElementById(elId);if(!el)return;
+  el.style.animation='shake .3s ease';
+  setTimeout(()=>el.style.animation='',350);
+}
+
+// ═══════════════════════════════════════════════════════════
+// Game Over
+// ═══════════════════════════════════════════════════════════
+function showGameOver(results,isDouble,bombEvents,unplayedPenalty){
+  document.getElementById('doubleWinBanner').style.display=isDouble?'block':'none';
+  const list=document.getElementById('resultList');
+  list.innerHTML=results.map((r,i)=>`
+    <div class="result-item" style="animation-delay:${i*.1}s">
+      <span class="result-pos">${I18N[lang].pos[i]||''}</span>
+      <span class="result-name">${esc(r.username)}${r.isDouble?'<span class="double-badge">×2</span>':''}</span>
+      <span class="result-delta ${r.delta>=0?'pos':'neg'}">${r.delta>=0?'+':''}${r.delta}🪙</span>
+    </div>`).join('');
+  // Bomb detail
+  let bd='';
+  if(bombEvents?.length)bd+=`💣 ${bombEvents.length} bomb event(s) processed. `;
+  if(unplayedPenalty>0)bd+=`⚠️ 4th place unplayed penalty: ${unplayedPenalty}🪙`;
+  document.getElementById('bombDetail').textContent=bd;
+  document.getElementById('gameOverModal').classList.add('active');
+
+  const myResult=results.find(r=>r.playerId===S.user.id);
+  if(myResult){
+    if(myResult.position===1){spawnConfetti();playSound('win')}
+    else{playSound('lose')}
+    S.user.coins=myResult.coins;
+  }
+}
+function closeGameOver(){
+  document.getElementById('gameOverModal').classList.remove('active');
+  S.gs=null;S.hand=[];S.sel=new Set();
+  document.getElementById('chatMessages').innerHTML='';
+  showScreen('lobbyScreen');
+  document.getElementById('lobbyCoins').textContent=S.user.coins;
+  socket.emit('auth',{userId:S.user.id});
+}
+
+// ═══════════════════════════════════════════════════════════
+// Socket Events
+// ═══════════════════════════════════════════════════════════
+socket.on('room_list',rooms=>renderRoomList(rooms));
+
+socket.on('room_joined',room=>{
+  S.room=room;renderWaiting(room);showScreen('waitingScreen');
+});
+socket.on('room_updated',room=>{
+  S.room=room;
+  if(curScreen()==='waitingScreen')renderWaiting(room);
+});
+
+socket.on('game_started',({hand,gameState})=>{
+  initAudio();
+  S.hand=hand;S.sel=new Set();S.gs=gameState;
+  showScreen('gameScreen');
+  document.getElementById('gameRoomId').textContent='#'+S.room?.id;
+  const vl=document.getElementById('gameVariantLabel');
+  vl.textContent=gameState.variant;
+  vl.className='variant-label variant-'+gameState.variant;
+  document.getElementById('stakesInfo').textContent=`🪙${gameState.stakes?.coins} stakes`;
+  playSound('deal');
+  setTimeout(()=>{fullUpdate(gameState);notify('Game started! 🃏')},200);
+});
+
+socket.on('game_state',gs=>{
+  fullUpdate(gs);
+});
+
+socket.on('table_cleared',({leaderId})=>{
+  if(leaderId===S.user.id)notify('✅ Your lead!');
+});
+
+socket.on('bomb_window',({playerId})=>{
+  const name=S.gs?.players.find(p=>p.id===playerId)?.username||'?';
+  notify(`⚡ ${name} played pair of 2s!`);
+  addSystemMsg(`⚡ ${name} played pair of 2s — Bomb window open!`);
+});
+
+socket.on('bombed',({bomberId,victimId,penalty})=>{
+  initAudio();animateBomb();playSound('bomb');
+  const bn=S.gs?.players.find(p=>p.id===bomberId)?.username||'?';
+  const vn=S.gs?.players.find(p=>p.id===victimId)?.username||'?';
+  notify(`💣 ${bn} BOMBED ${vn}! -${penalty}🪙`);
+  addSystemMsg(`💣 ${bn} bombed ${vn} for ${penalty}🪙!`);
+  S.sel=new Set();
+});
+
+socket.on('player_finished',({playerId,position,username})=>{
+  notify(`🎉 ${username} finished ${I18N[lang].pos[position-1]}!`);
+  addSystemMsg(`${username} finished ${I18N[lang].pos[position-1]}!`);
+  if(playerId===S.user.id){S.hand=[];renderHand()}
+});
+
+socket.on('play_error',msg=>{
+  notify('❌ '+msg);shakeError('myHandCards');
+});
+socket.on('error',msg=>notify('⚠️ '+msg));
+
+socket.on('game_over',({results,bombEvents,unplayedPenalty,isDouble})=>{
+  showGameOver(results,isDouble,bombEvents,unplayedPenalty);
+});
+
+socket.on('auto_win',({playerId,username,type})=>{
+  const tm={ALL_RED:'All Red ❤️♦️',ALL_BLACK:'All Black ♠️♣️',FOUR_TWOS:'Four 2s! 🃏🃏🃏🃏'};
+  document.getElementById('autoWinMsg').innerHTML=`<b>${esc(username)}</b> — ${tm[type]||type}`;
+  document.getElementById('autoWinModal').classList.add('active');
+  if(playerId===S.user.id){spawnConfetti();playSound('win')}
+  addSystemMsg(`🏆 ${username} auto-win: ${tm[type]||type}`);
+  setTimeout(()=>document.getElementById('autoWinModal').classList.remove('active'),5000);
+});
+
+socket.on('chat_history',msgs=>msgs.forEach(m=>addChatMsg(m,true)));
+socket.on('chat_message',msg=>{addChatMsg(msg)});
+
+// ═══════════════════════════════════════════════════════════
+// Screen / Utility
+// ═══════════════════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function curScreen(){return [...document.querySelectorAll('.screen')].find(s=>s.classList.contains('active'))?.id}
+
+let notifT;
+function notify(msg){
+  const el=document.getElementById('notif');
+  el.textContent=msg;el.className='notif';
+  clearTimeout(notifT);notifT=setTimeout(()=>el.classList.add('hidden'),3200);
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// ═══════════════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════════════
+(function init(){
+  setLang('en');
+  const saved=localStorage.getItem('khmer_user');
+  if(saved){try{S.user=JSON.parse(saved);enterLobby()}catch(e){localStorage.removeItem('khmer_user')}}
+})();
+</script>
+</body>
+</html>
