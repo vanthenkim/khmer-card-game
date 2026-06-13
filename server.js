@@ -772,4 +772,5 @@ function leaveAllRooms(socket, userId) {
 // ── Start Server ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`🃏 Khmer Card Game running at http://
+  console.log(`🃏 Khmer Card Game running at http://localhost:${PORT}`);
+});
