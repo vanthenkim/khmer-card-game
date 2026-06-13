@@ -135,7 +135,7 @@ input,select{font-family:'Battambang','Segoe UI',sans-serif;font-size:14px;borde
 
 /* Center table */
 .table-center{grid-area:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:6px}
-.table-cards{position:relative;width:200px;height:120px;margin:0 auto}
+.table-cards{position:relative;width:340px;height:200px;margin:0 auto}
 .table-label{font-size:11px;color:rgba(255,255,255,.7);text-align:center}
 .stakes-info{font-size:10px;color:var(--gold)}
 .bomb-hint{font-size:12px;color:#ff6b6b;animation:blink .6s infinite;font-weight:700;text-align:center}
@@ -145,7 +145,7 @@ input,select{font-family:'Battambang','Segoe UI',sans-serif;font-size:14px;borde
 .card.red .rank,.card.red .suit-sym{color:var(--card-red)}
 .card.black .rank,.card.black .suit-sym{color:var(--card-black)}
 .card.selected{transform:translateY(-10px);box-shadow:0 0 0 2.5px var(--gold),0 6px 18px rgba(0,0,0,.5)}
-.card.table-card{cursor:default;position:absolute;left:50%;top:50%;margin-left:-27px;margin-top:-39px;animation:cardSlideIn .25s ease both}
+.card.table-card{cursor:default;position:absolute;left:50%;top:50%;margin-left:-38px;margin-top:-55px;animation:cardSlideIn .25s ease both}
 .card .rank{font-size:9px;line-height:1;padding:2px 3px}
 .card .suit-sym{font-size:11px;line-height:1;padding:2px 3px}
 .card.sm{width:26px;height:38px}
@@ -154,6 +154,9 @@ input,select{font-family:'Battambang','Segoe UI',sans-serif;font-size:14px;borde
 .card.xl{width:54px;height:78px}
 .card.xl .rank{font-size:12px;padding:2px 4px}
 .card.xl .suit-sym{font-size:16px;padding:2px 4px}
+.card.xxl{width:76px;height:110px}
+.card.xxl .rank{font-size:17px;padding:3px 5px}
+.card.xxl .suit-sym{font-size:22px;padding:3px 5px}
 
 /* My hand */
 .my-hand-area{background:rgba(0,0,0,.35);padding:8px 8px 6px;display:flex;flex-direction:column;gap:6px}
@@ -219,6 +222,7 @@ input,select{font-family:'Battambang','Segoe UI',sans-serif;font-size:14px;borde
   .card.sm .rank{font-size:11px} .card.sm .suit-sym{font-size:13px}
   .card.lg .rank{font-size:13px} .card.lg .suit-sym{font-size:16px}
   .card.xl{width:62px;height:90px} .card.xl .rank{font-size:14px} .card.xl .suit-sym{font-size:18px}
+  .card.xxl{width:90px;height:130px} .card.xxl .rank{font-size:20px;padding:3px 6px} .card.xxl .suit-sym{font-size:26px;padding:3px 6px}
   .chat-panel{max-width:480px;left:50%;transform:translateX(-50%) translateY(100%);right:auto;border-radius:16px 16px 0 0;bottom:0}
   .chat-panel.open{transform:translateX(-50%) translateY(0)}
 }
@@ -493,7 +497,7 @@ function makeCard(v,size='md',selected=false,isTable=false){
 // App State
 // ═══════════════════════════════════════════════════════════
 const socket=io();
-const S={user:null,room:null,gs:null,hand:[],sel:new Set(),chatOpen:false,unread:0};
+const S={user:null,room:null,gs:null,hand:[],sel:new Set(),chatOpen:false,unread:0,isHost:false,tableHistory:[],lastTableSig:null};
 
 // ═══════════════════════════════════════════════════════════
 // Auth
@@ -631,14 +635,27 @@ function renderTable(combo){
   const lbl=document.getElementById('tableLabel');
   if(!combo){lbl.textContent=S.gs?.variant==='COMUNIS'?'Table empty (COMUNIS — same suit!)':'Table empty — lead anything';return}
   lbl.textContent=comboLabel(combo);
-  (combo.rawCards||[]).forEach((v,i)=>{
-    const el=makeCard(v,'xl',false,true);
-    const rot=(Math.random()-0.5)*26;
-    const tx=(Math.random()-0.5)*22;
-    const ty=(Math.random()-0.5)*16;
+  // Show history pile (faded cards behind)
+  (S.tableHistory||[]).forEach((v,idx)=>{
+    const el=makeCard(v,'md',false,true);
+    el.style.opacity='0.28';
+    const rot=((v*17+idx*31)%32)-16;
+    const tx=((v*11+idx*23)%44)-22;
+    const ty=((v*7+idx*13)%28)-14;
     el.style.transform=`rotate(${rot}deg) translate(${tx}px,${ty}px)`;
+    el.style.zIndex=idx+1;
+    c.appendChild(el);
+  });
+  // Show current combo (full size, on top)
+  const cards=combo.rawCards||[];
+  const spread=cards.length>1?14:0;
+  cards.forEach((v,i)=>{
+    const el=makeCard(v,'xxl',false,true);
+    const rot=((v*9+i*17)%20)-10;
+    const tx=(i-(cards.length-1)/2)*spread;
+    el.style.transform=`rotate(${rot}deg) translateX(${tx}px)`;
     el.style.animationDelay=`${i*0.07}s`;
-    el.style.zIndex=i+1;
+    el.style.zIndex=(S.tableHistory||[]).length+i+1;
     c.appendChild(el);
   });
 }
@@ -689,7 +706,20 @@ function fullUpdate(gs){
   S.gs=gs;
   if(gs.myHand)S.hand=gs.myHand;
   renderHand();
-  renderTable(gs.currentCombo);
+  // Track pile history
+  const combo=gs.currentCombo;
+  if(combo){
+    const sig=(combo.rawCards||[]).join(',');
+    if(S.lastTableSig && S.lastTableSig!==sig){
+      // New combo played — push previous cards to history pile
+      const prev=S.tableHistory.slice();
+      S.tableHistory=prev.concat(S.lastTableSig.split(',').map(Number));
+    }
+    S.lastTableSig=sig;
+  } else {
+    S.tableHistory=[];S.lastTableSig=null;
+  }
+  renderTable(combo);
   renderOpponents(gs,S.user.id);
   updateBtns();
   document.getElementById('bombHint').style.display=gs.bombWindow?'block':'none';
@@ -814,7 +844,7 @@ function showGameOver(results,isDouble,bombEvents,unplayedPenalty){
   }
   // Show play again only for host
   const isHost=S.room?.players?.[0]?.id===S.user.id;
-  document.getElementById('playAgainBtn').style.display=isHost?'':'none';
+  document.getElementById('playAgainBtn').style.display=S.isHost?'':'none';
 }
 function closeGameOver(){
   document.getElementById('gameOverModal').classList.remove('active');
@@ -843,7 +873,9 @@ function triggerDealAnim(numCards){
 socket.on('room_list',rooms=>renderRoomList(rooms));
 
 socket.on('room_joined',room=>{
-  S.room=room;renderWaiting(room);showScreen('waitingScreen');
+  S.room=room;
+  S.isHost=room.players[0]?.id===S.user?.id;
+  renderWaiting(room);showScreen('waitingScreen');
 });
 socket.on('room_updated',room=>{
   S.room=room;
@@ -853,6 +885,7 @@ socket.on('room_updated',room=>{
 socket.on('game_started',({hand,gameState})=>{
   initAudio();
   S.hand=hand;S.sel=new Set();S.gs=gameState;
+  S.tableHistory=[];S.lastTableSig=null;
   showScreen('gameScreen');
   document.getElementById('gameRoomId').textContent='#'+S.room?.id;
   const vl=document.getElementById('gameVariantLabel');
@@ -869,6 +902,7 @@ socket.on('game_state',gs=>{
 });
 
 socket.on('table_cleared',({leaderId})=>{
+  S.tableHistory=[];S.lastTableSig=null;
   if(leaderId===S.user.id)notify('✅ Your lead!');
 });
 
