@@ -6,7 +6,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { v4: uuid } = require('uuid');
 const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 
 const G = require('./gameEngine');
 
@@ -22,83 +22,88 @@ const users = {};   // userId -> { id, username, coins, diamonds, wins, losses }
 const rooms = {};   // roomId -> RoomState
 const sockets = {}; // socketId -> userId
 
-// ── CSV Persistence ───────────────────────────────────────────
-const DATA_FILE = path.join(__dirname, 'users.csv');
-const CSV_HEADER = 'id,username,password,coins,diamonds,wins,losses';
+// ── PostgreSQL ────────────────────────────────────────────────
+const pool = process.env.DATABASE_URL
+  ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+  : null;
 
-function csvEscape(v) {
-  const s = String(v);
-  return s.includes(',') || s.includes('"') || s.includes('\n')
-    ? '"' + s.replace(/"/g, '""') + '"' : s;
+async function initDB() {
+  if (!pool) { console.log('No DATABASE_URL — users stored in memory only'); return; }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id VARCHAR(36) PRIMARY KEY,
+      username VARCHAR(100) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      coins INTEGER DEFAULT 1000,
+      diamonds INTEGER DEFAULT 50,
+      wins INTEGER DEFAULT 0,
+      losses INTEGER DEFAULT 0
+    )
+  `);
+  const { rows } = await pool.query('SELECT * FROM users');
+  rows.forEach(u => { users[u.id] = u; });
+  console.log(`Loaded ${rows.length} users from PostgreSQL`);
 }
 
-function loadUsers() {
-  if (!fs.existsSync(DATA_FILE)) return;
-  const lines = fs.readFileSync(DATA_FILE, 'utf8').trim().split(/\r?\n/);
-  let count = 0;
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].trim().split(',');
-    if (cols.length < 7) continue;
-    const [id, username, password, coins, diamonds, wins, losses] = cols.map(c =>
-      c.startsWith('"') ? c.slice(1, -1).replace(/""/g, '"') : c
-    );
-    users[id] = { id, username, password,
-      coins: parseInt(coins) || 1000,
-      diamonds: parseInt(diamonds) || 50,
-      wins: parseInt(wins) || 0,
-      losses: parseInt(losses) || 0
-    };
-    count++;
-  }
-  console.log(`Loaded ${count} users from users.csv`);
+function saveUser(u) {
+  if (!pool || u.isBot) return;
+  pool.query(
+    `INSERT INTO users (id,username,password,coins,diamonds,wins,losses)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
+     ON CONFLICT (id) DO UPDATE SET
+       password=$3, coins=$4, diamonds=$5, wins=$6, losses=$7`,
+    [u.id, u.username, u.password, u.coins, u.diamonds, u.wins, u.losses]
+  ).catch(err => console.error('DB save error:', err));
 }
-
-function saveUsers() {
-  const lines = [CSV_HEADER];
-  for (const u of Object.values(users)) {
-    if (u.isBot) continue;
-    lines.push([u.id, u.username, u.password, u.coins, u.diamonds, u.wins, u.losses]
-      .map(csvEscape).join(','));
-  }
-  fs.writeFileSync(DATA_FILE, lines.join('\r\n'), 'utf8');
-}
-
-loadUsers();
 
 // ── Bot Names ─────────────────────────────────────────────────
 const BOT_NAMES = ['🤖 Bot Dara', '🤖 Bot Sokha', '🤖 Bot Mony'];
 let botNameIdx = 0;
 
 // ── Auth ──────────────────────────────────────────────────────
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.json({ ok:false, error:'Missing fields' });
   if (Object.values(users).find(u => u.username === username))
     return res.json({ ok:false, error:'Username taken' });
   const id = uuid();
   users[id] = { id, username, password, coins:1000, diamonds:50, wins:0, losses:0 };
-  saveUsers();
+  saveUser(users[id]);
   res.json({ ok:true, user: safeUser(users[id]) });
 });
 
-app.post('/api/login', (req, res) => {
-  loadUsers();
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
+  if (pool) {
+    try {
+      const { rows } = await pool.query(
+        'SELECT * FROM users WHERE username=$1 AND password=$2', [username, password]);
+      if (!rows.length) return res.json({ ok:false, error:'Invalid credentials' });
+      users[rows[0].id] = rows[0]; // sync to memory
+      return res.json({ ok:true, user: safeUser(rows[0]) });
+    } catch(e) { console.error('DB login error:', e); }
+  }
+  // Fallback to memory
   const user = Object.values(users).find(u => u.username === username && u.password === password);
   if (!user) return res.json({ ok:false, error:'Invalid credentials' });
   res.json({ ok:true, user: safeUser(user) });
 });
 
 
-// ── Admin: download users.csv ─────────────────────────────────
-// Visit: /admin/users?key=icf2026  (change the key to something secret)
-app.get('/admin/users', (req, res) => {
+// ── Admin: view users ─────────────────────────────────────────
+// Visit: /admin/users?key=icf2026
+app.get('/admin/users', async (req, res) => {
   if (req.query.key !== 'icf2026') return res.status(403).send('Forbidden');
-  saveUsers(); // flush latest state first
-  if (!fs.existsSync(DATA_FILE)) return res.status(404).send('No users yet');
+  const header = 'id,username,password,coins,diamonds,wins,losses\r\n';
+  const rows = pool
+    ? (await pool.query('SELECT * FROM users ORDER BY username')).rows
+    : Object.values(users).filter(u => !u.isBot);
+  const csv = rows.map(u =>
+    [u.id,u.username,u.password,u.coins,u.diamonds,u.wins,u.losses].join(',')
+  ).join('\r\n');
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', 'attachment; filename="users.csv"');
-  res.sendFile(DATA_FILE);
+  res.send(header + csv);
 });
 
 function safeUser(u) {
@@ -698,8 +703,8 @@ function endGame(room) {
     users[pid].coins += payouts[pid] || 0;
     if (pid === winner) users[pid].wins++;
     if (pid === loser) users[pid].losses++;
+    saveUser(users[pid]);
   });
-  saveUsers();
 
   const results = g.finishOrder
     .filter(Boolean)
@@ -792,6 +797,13 @@ function leaveAllRooms(socket, userId) {
 
 // ── Start Server ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`🃏 Khmer Card Game running at http://localhost:${PORT}`);
+initDB().then(() => {
+  server.listen(PORT, () => {
+    console.log(`🃏 Khmer Card Game running at http://localhost:${PORT}`);
+  });
+}).catch(err => {
+  console.error('DB init failed, starting anyway:', err.message);
+  server.listen(PORT, () => {
+    console.log(`🃏 Khmer Card Game running at http://localhost:${PORT}`);
+  });
 });
