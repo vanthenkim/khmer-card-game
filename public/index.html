@@ -261,6 +261,7 @@ input,select{font-family:'Battambang','Segoe UI',sans-serif;font-size:14px;borde
       <span id="lobbyUsername"></span>
       <span class="coins">🪙 <span id="lobbyCoins">0</span></span>
       <span class="diamonds">💎 <span id="lobbyDiamonds">0</span></span>
+      <button onclick="logout()" style="margin-left:10px;background:#c0392b;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px" data-i18n="logout">Logout</button>
     </div>
   </div>
   <div class="lobby-body">
@@ -390,7 +391,7 @@ input,select{font-family:'Battambang','Segoe UI',sans-serif;font-size:14px;borde
 const I18N = {
   en:{
     subtitle:'Khmer Card Game · 4 Players',
-    login:'Login',register:'Register',
+    login:'Login',register:'Register',logout:'Logout',
     createRoom:'Create Room',openRooms:'Open Rooms',noRooms:'No open rooms — create one!',
     waitingRoom:'Waiting Room',shareCode:'Share this room code:',clickCopy:'Tap to copy',
     players:'Players (2–4)',leave:'Leave',startGame:'Start Game',
@@ -401,7 +402,7 @@ const I18N = {
   },
   km:{
     subtitle:'ល្បែងបៀ · ៤នាក់',
-    login:'ចូល',register:'ចុះឈ្មោះ',
+    login:'ចូល',register:'ចុះឈ្មោះ',logout:'ចាកចេញ',
     createRoom:'បង្កើតបន្ទប់',openRooms:'បន្ទប់បើក',noRooms:'គ្មានបន្ទប់ — បង្កើតថ្មី!',
     waitingRoom:'បន្ទប់រង់ចាំ',shareCode:'ចែករំលែកលេខកូដ:',clickCopy:'ចុចដើម្បីចម្លង',
     players:'អ្នកលេង (២–៤)',leave:'ចេញ',startGame:'ចាប់ផ្ដើម',
@@ -933,6 +934,12 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 // ═══════════════════════════════════════════════════════════
 // Init
 // ═══════════════════════════════════════════════════════════
+function logout(){
+  localStorage.removeItem('khmer_user');
+  S.user=null;
+  showScreen('authScreen');
+}
+
 (function init(){
   setLang('en');
   const saved=localStorage.getItem('khmer_user');
