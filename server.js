@@ -82,7 +82,7 @@ app.post('/api/register', (req, res) => {
 });
 
 app.post('/api/login', (req, res) => {
-  loadUsers(); // pick up any manual CSV edits
+  loadUsers();
   const { username, password } = req.body;
   const user = Object.values(users).find(u => u.username === username && u.password === password);
   if (!user) return res.json({ ok:false, error:'Invalid credentials' });
@@ -173,6 +173,15 @@ io.on('connection', (socket) => {
     if (!room) return;
     if (room.players[0].id !== userId) return socket.emit('error','Only host can start');
     if (room.players.length < 2) return socket.emit('error','Need at least 2 players');
+    startGame(room);
+  });
+
+  socket.on('play_again', ({ userId, roomId }) => {
+    const room = rooms[roomId];
+    if (!room) return;
+    if (room.players[0]?.id !== userId) return socket.emit('error', 'Only host can restart');
+    if (room.phase !== 'FINISHED') return;
+    room.players.forEach(p => { p.finished = false; p.cardCount = 0; });
     startGame(room);
   });
 

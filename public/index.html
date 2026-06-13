@@ -33,7 +33,8 @@ input,select{font-family:'Battambang','Segoe UI',sans-serif;font-size:14px;borde
 @keyframes bombFlashAnim{0%{background:var(--green)}20%{background:#c62828}50%{background:#ff6600}80%{background:#c62828}100%{background:var(--green)}}
 @keyframes winPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,200,66,0)}50%{box-shadow:0 0 0 24px rgba(245,200,66,.35)}}
 @keyframes confettiFall{0%{transform:translateY(-30px) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
-@keyframes dealIn{from{transform:translate(0,-150px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+@keyframes dealIn{from{transform:translate(0,-160px) scale(.5) rotate(-10deg);opacity:0}60%{opacity:1}to{transform:none;opacity:1}}
+@keyframes deckSplit{0%{transform:translate(-50%,-50%) scale(1);opacity:1}60%{transform:translate(-50%,-50%) scale(1.1);opacity:1}100%{transform:translate(-50%,-50%) scale(.2) rotate(180deg);opacity:0}}
 @keyframes fadeSlideUp{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
@@ -134,7 +135,7 @@ input,select{font-family:'Battambang','Segoe UI',sans-serif;font-size:14px;borde
 
 /* Center table */
 .table-center{grid-area:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:6px}
-.table-cards{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center;min-height:70px}
+.table-cards{position:relative;width:200px;height:120px;margin:0 auto}
 .table-label{font-size:11px;color:rgba(255,255,255,.7);text-align:center}
 .stakes-info{font-size:10px;color:var(--gold)}
 .bomb-hint{font-size:12px;color:#ff6b6b;animation:blink .6s infinite;font-weight:700;text-align:center}
@@ -144,12 +145,15 @@ input,select{font-family:'Battambang','Segoe UI',sans-serif;font-size:14px;borde
 .card.red .rank,.card.red .suit-sym{color:var(--card-red)}
 .card.black .rank,.card.black .suit-sym{color:var(--card-black)}
 .card.selected{transform:translateY(-10px);box-shadow:0 0 0 2.5px var(--gold),0 6px 18px rgba(0,0,0,.5)}
-.card.table-card{cursor:default;animation:cardSlideIn .2s ease both}
+.card.table-card{cursor:default;position:absolute;left:50%;top:50%;margin-left:-27px;margin-top:-39px;animation:cardSlideIn .25s ease both}
 .card .rank{font-size:9px;line-height:1;padding:2px 3px}
 .card .suit-sym{font-size:11px;line-height:1;padding:2px 3px}
 .card.sm{width:26px;height:38px}
 .card.md{width:34px;height:50px}
 .card.lg{width:42px;height:62px}
+.card.xl{width:54px;height:78px}
+.card.xl .rank{font-size:12px;padding:2px 4px}
+.card.xl .suit-sym{font-size:16px;padding:2px 4px}
 
 /* My hand */
 .my-hand-area{background:rgba(0,0,0,.35);padding:8px 8px 6px;display:flex;flex-direction:column;gap:6px}
@@ -214,9 +218,11 @@ input,select{font-family:'Battambang','Segoe UI',sans-serif;font-size:14px;borde
   .card.sm{width:32px;height:46px} .card.md{width:40px;height:58px} .card.lg{width:50px;height:72px}
   .card.sm .rank{font-size:11px} .card.sm .suit-sym{font-size:13px}
   .card.lg .rank{font-size:13px} .card.lg .suit-sym{font-size:16px}
+  .card.xl{width:62px;height:90px} .card.xl .rank{font-size:14px} .card.xl .suit-sym{font-size:18px}
   .chat-panel{max-width:480px;left:50%;transform:translateX(-50%) translateY(100%);right:auto;border-radius:16px;bottom:16px}
   .chat-panel.open{transform:translateX(-50%) translateY(0)}
 }
+.deal-deck-el{position:fixed;left:50%;top:45%;width:54px;height:78px;background:linear-gradient(135deg,#1a3a7a,#2a5db0);border-radius:8px;border:2px solid rgba(255,255,255,.35);box-shadow:0 6px 24px rgba(0,0,0,.6);z-index:200;pointer-events:none;animation:deckSplit .9s ease forwards;animation-delay:.3s;opacity:1}
 </style>
 </head>
 <body>
@@ -359,7 +365,10 @@ input,select{font-family:'Battambang','Segoe UI',sans-serif;font-size:14px;borde
     <div id="doubleWinBanner" style="display:none;color:var(--gold);font-weight:700;margin-bottom:10px;font-size:15px">⚡ Double Win!</div>
     <div class="result-list" id="resultList"></div>
     <div class="bomb-detail" id="bombDetail"></div>
-    <button class="modal-btn" onclick="closeGameOver()" data-i18n="backToLobby">Back to Lobby</button>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="modal-btn" onclick="playAgain()" id="playAgainBtn" style="background:var(--green3);color:#fff" data-i18n="playAgain">Play Again 🔄</button>
+      <button class="modal-btn" onclick="closeGameOver()" data-i18n="backToLobby">Back to Lobby</button>
+    </div>
   </div>
 </div>
 
@@ -388,7 +397,7 @@ const I18N = {
     pass:'Pass',play:'Play',bomb:'💣 Bomb!',
     gameOver:'Game Over! 🏆',backToLobby:'Back to Lobby',
     autoWin:'Auto Win!',gameResetting:'Game resetting in 5s...',
-    pos:['1st 🥇','2nd 🥈','3rd 🥉','4th 😭'],finishes:'done',
+    pos:['1st 🥇','2nd 🥈','3rd 🥉','4th 😭'],finishes:'done',playAgain:'Play Again 🔄',
   },
   km:{
     subtitle:'ល្បែងបៀ · ៤នាក់',
@@ -396,7 +405,7 @@ const I18N = {
     createRoom:'បង្កើតបន្ទប់',openRooms:'បន្ទប់បើក',noRooms:'គ្មានបន្ទប់ — បង្កើតថ្មី!',
     waitingRoom:'បន្ទប់រង់ចាំ',shareCode:'ចែករំលែកលេខកូដ:',clickCopy:'ចុចដើម្បីចម្លង',
     players:'អ្នកលេង (២–៤)',leave:'ចេញ',startGame:'ចាប់ផ្ដើម',
-    pass:'ប្ដូរ',play:'លេង',bomb:'💣 Bomb!',
+    pass:'ប្ដូរ',play:'លេង',bomb:'💣 Bomb!',playAgain:'លេងម្ដងទៀត 🔄',
     gameOver:'ល្បែងចប់! 🏆',backToLobby:'ត្រឡប់',
     autoWin:'ឈ្នះស្វ័យប្រវត្តិ!',gameResetting:'ចាប់ផ្ដើមឡើងវិញ...',
     pos:['ទី១ 🥇','ទី២ 🥈','ទី៣ 🥉','ទី៤ 😭'],finishes:'ចប់',
@@ -620,10 +629,15 @@ function renderTable(combo){
   const c=document.getElementById('tableCards');c.innerHTML='';
   const lbl=document.getElementById('tableLabel');
   if(!combo){lbl.textContent=S.gs?.variant==='COMUNIS'?'Table empty (COMUNIS — same suit!)':'Table empty — lead anything';return}
-  lbl.textContent=comboLabel(combo)+' · '+(combo.cards||[]).join(' ');
+  lbl.textContent=comboLabel(combo);
   (combo.rawCards||[]).forEach((v,i)=>{
-    const el=makeCard(v,'md',false,true);
-    el.style.animationDelay=`${i*0.06}s`;
+    const el=makeCard(v,'xl',false,true);
+    const rot=(Math.random()-0.5)*26;
+    const tx=(Math.random()-0.5)*22;
+    const ty=(Math.random()-0.5)*16;
+    el.style.transform=`rotate(${rot}deg) translate(${tx}px,${ty}px)`;
+    el.style.animationDelay=`${i*0.07}s`;
+    el.style.zIndex=i+1;
     c.appendChild(el);
   });
 }
@@ -797,6 +811,9 @@ function showGameOver(results,isDouble,bombEvents,unplayedPenalty){
     else{playSound('lose')}
     S.user.coins=myResult.coins;
   }
+  // Show play again only for host
+  const isHost=S.room?.players?.[0]?.id===S.user.id;
+  document.getElementById('playAgainBtn').style.display=isHost?'':'none';
 }
 function closeGameOver(){
   document.getElementById('gameOverModal').classList.remove('active');
@@ -805,6 +822,18 @@ function closeGameOver(){
   showScreen('lobbyScreen');
   document.getElementById('lobbyCoins').textContent=S.user.coins;
   socket.emit('auth',{userId:S.user.id});
+}
+function playAgain(){
+  document.getElementById('gameOverModal').classList.remove('active');
+  socket.emit('play_again',{userId:S.user.id,roomId:S.room?.id});
+}
+function triggerDealAnim(numCards){
+  const existing=document.getElementById('dealDeck');
+  if(existing)existing.remove();
+  const deck=document.createElement('div');
+  deck.id='dealDeck';deck.className='deal-deck-el';
+  document.getElementById('gameScreen').appendChild(deck);
+  setTimeout(()=>deck.remove(), 1400);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -830,7 +859,8 @@ socket.on('game_started',({hand,gameState})=>{
   vl.className='variant-label variant-'+gameState.variant;
   document.getElementById('stakesInfo').textContent=`🪙${gameState.stakes?.coins} stakes`;
   playSound('deal');
-  setTimeout(()=>{fullUpdate(gameState);notify('Game started! 🃏')},200);
+  triggerDealAnim(hand.length);
+  setTimeout(()=>{fullUpdate(gameState);notify('Game started! 🃏')},300);
 });
 
 socket.on('game_state',gs=>{
@@ -911,3 +941,4 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 </script>
 </body>
 </html>
+                                                                                                                                                                                                                                                
