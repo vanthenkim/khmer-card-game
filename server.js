@@ -6,6 +6,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { v4: uuid } = require('uuid');
 const path = require('path');
+const fs = require('fs');
 
 const G = require('./gameEngine');
 
@@ -16,16 +17,59 @@ const io = new Server(server, { cors: { origin: '*' } });
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ââ In-Memory Stores ââââââââââââââââââââââââââââââââââââââââââ
+// ── In-Memory Stores ──────────────────────────────────────────
 const users = {};   // userId -> { id, username, coins, diamonds, wins, losses }
 const rooms = {};   // roomId -> RoomState
 const sockets = {}; // socketId -> userId
 
-// ââ Bot Names âââââââââââââââââââââââââââââââââââââââââââââââââ
-const BOT_NAMES = ['ð¤ Bot Dara', 'ð¤ Bot Sokha', 'ð¤ Bot Mony'];
+// ── CSV Persistence ───────────────────────────────────────────
+const DATA_FILE = path.join(__dirname, 'users.csv');
+const CSV_HEADER = 'id,username,password,coins,diamonds,wins,losses';
+
+function csvEscape(v) {
+  const s = String(v);
+  return s.includes(',') || s.includes('"') || s.includes('\n')
+    ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function loadUsers() {
+  if (!fs.existsSync(DATA_FILE)) return;
+  const lines = fs.readFileSync(DATA_FILE, 'utf8').trim().split(/\r?\n/);
+  let count = 0;
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].trim().split(',');
+    if (cols.length < 7) continue;
+    const [id, username, password, coins, diamonds, wins, losses] = cols.map(c =>
+      c.startsWith('"') ? c.slice(1, -1).replace(/""/g, '"') : c
+    );
+    users[id] = { id, username, password,
+      coins: parseInt(coins) || 1000,
+      diamonds: parseInt(diamonds) || 50,
+      wins: parseInt(wins) || 0,
+      losses: parseInt(losses) || 0
+    };
+    count++;
+  }
+  console.log(`Loaded ${count} users from users.csv`);
+}
+
+function saveUsers() {
+  const lines = [CSV_HEADER];
+  for (const u of Object.values(users)) {
+    if (u.isBot) continue;
+    lines.push([u.id, u.username, u.password, u.coins, u.diamonds, u.wins, u.losses]
+      .map(csvEscape).join(','));
+  }
+  fs.writeFileSync(DATA_FILE, lines.join('\r\n'), 'utf8');
+}
+
+loadUsers();
+
+// ── Bot Names ─────────────────────────────────────────────────
+const BOT_NAMES = ['🤖 Bot Dara', '🤖 Bot Sokha', '🤖 Bot Mony'];
 let botNameIdx = 0;
 
-// ââ Auth ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ── Auth ──────────────────────────────────────────────────────
 app.post('/api/register', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.json({ ok:false, error:'Missing fields' });
@@ -33,10 +77,12 @@ app.post('/api/register', (req, res) => {
     return res.json({ ok:false, error:'Username taken' });
   const id = uuid();
   users[id] = { id, username, password, coins:1000, diamonds:50, wins:0, losses:0 };
+  saveUsers();
   res.json({ ok:true, user: safeUser(users[id]) });
 });
 
 app.post('/api/login', (req, res) => {
+  loadUsers(); // pick up any manual CSV edits
   const { username, password } = req.body;
   const user = Object.values(users).find(u => u.username === username && u.password === password);
   if (!user) return res.json({ ok:false, error:'Invalid credentials' });
@@ -47,7 +93,7 @@ function safeUser(u) {
   return { id:u.id, username:u.username, coins:u.coins, diamonds:u.diamonds, wins:u.wins, losses:u.losses };
 }
 
-// ââ Room Helpers ââââââââââââââââââââââââââââââââââââââââââââââ
+// ── Room Helpers ──────────────────────────────────────────────
 function publicRoom(r) {
   return {
     id: r.id,
@@ -146,7 +192,7 @@ io.on('connection', (socket) => {
     handleAutoWin(socket, userId, roomId);
   });
 
-  // ââ Add/Remove Bot ââââââââââââââââââââââââââââââââââââââââââ
+  // ── Add/Remove Bot ──────────────────────────────────────────
   socket.on('add_bot', ({ userId, roomId }) => {
     const room = rooms[roomId];
     if (!room) return;
@@ -181,7 +227,7 @@ io.on('connection', (socket) => {
     io.emit('room_list', getRoomList());
   });
 
-  // ââ Chat ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Chat ────────────────────────────────────────────────────
   socket.on('chat', ({ userId, roomId, message }) => {
     const user = users[userId];
     const room = rooms[roomId];
@@ -209,7 +255,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// ââ Game Actions ââââââââââââââââââââââââââââââââââââââââââââââ
+// ── Game Actions ──────────────────────────────────────────────
 function startGame(room) {
   const hands = G.dealCards();
   const startIdx = G.findStartingPlayer(hands);
@@ -272,7 +318,7 @@ function startGame(room) {
   scheduleBotTurn(room);
 }
 
-// ââ Core Play/Pass Logic (shared by human and bot) ââââââââââââ
+// ── Core Play/Pass Logic (shared by human and bot) ────────────
 function doPlay(room, userId, playerIdx, cards) {
   const g = room.game;
   const hand = g.hands[userId];
@@ -290,7 +336,7 @@ function doPlay(room, userId, playerIdx, cards) {
   }
 
   if (g.firstTurn && !G.mustInclude3C(cards))
-    return 'First play must include 3â£';
+    return 'First play must include 3♣';
 
   if (g.currentCombo) {
     const doesBeat = room.variant === 'COMUNIS'
@@ -429,7 +475,7 @@ function handleAutoWin(socket, userId, roomId) {
   setTimeout(() => resetRoom(room), 5000);
 }
 
-// ââ Bot AI ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ── Bot AI ────────────────────────────────────────────────────
 function isBotTurn(room) {
   if (!room.game || room.phase !== 'PLAYING') return false;
   const p = room.players[room.game.currentPlayerIdx];
@@ -438,7 +484,7 @@ function isBotTurn(room) {
 
 function scheduleBotTurn(room) {
   if (!isBotTurn(room)) return;
-  const delay = 900 + Math.random() * 700; // 0.9â1.6s think time
+  const delay = 900 + Math.random() * 700; // 0.9–1.6s think time
   const roomId = room.id;
   setTimeout(() => executeBotTurn(roomId), delay);
 }
@@ -470,7 +516,7 @@ function executeBotTurn(roomId) {
   } else if (g.currentCombo) {
     doPass(room, player.id, playerIdx);
   } else {
-    // Leading and no card chosen â play lowest (shouldn't happen)
+    // Leading and no card chosen — play lowest (shouldn't happen)
     const sorted = G.sortCards([...hand]);
     doPlay(room, player.id, playerIdx, [sorted[0]]);
   }
@@ -479,9 +525,9 @@ function executeBotTurn(roomId) {
 function botDecide(hand, currentCombo, variant, isFirstTurn) {
   const sorted = G.sortCards([...hand]);
 
-  // First turn: must include 3â£ (card value = 0)
+  // First turn: must include 3♣ (card value = 0)
   if (isFirstTurn) {
-    return [0]; // 3â£
+    return [0]; // 3♣
   }
 
   // Leading (no current combo): play lowest single card
@@ -572,7 +618,7 @@ function findNOfAKindInHand(sorted, n) {
   return groups;
 }
 
-// ââ Turn & Finish Logic âââââââââââââââââââââââââââââââââââââââ
+// ── Turn & Finish Logic ───────────────────────────────────────
 function advanceTurn(room, fromIdx) {
   const players = room.players;
   let next = (fromIdx + 1) % players.length;
@@ -632,6 +678,7 @@ function endGame(room) {
     if (pid === winner) users[pid].wins++;
     if (pid === loser) users[pid].losses++;
   });
+  saveUsers();
 
   const results = g.finishOrder
     .filter(Boolean)
@@ -656,7 +703,7 @@ function resetRoom(room) {
   io.emit('room_list', getRoomList());
 }
 
-// ââ State Helpers âââââââââââââââââââââââââââââââââââââââââââââ
+// ── State Helpers ─────────────────────────────────────────────
 function buildGameState(room, forPlayerId) {
   const g = room.game;
   return {
@@ -694,7 +741,7 @@ function emitGameState(room, _) {
   });
 }
 
-// ââ Utility âââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ── Utility ───────────────────────────────────────────────────
 function makePlayer(user, socketId) {
   return {
     id: user.id, username: user.username, coins: user.coins,
@@ -722,8 +769,7 @@ function leaveAllRooms(socket, userId) {
   });
 }
 
-// ââ Start Server ââââââââââââââââââââââââââââââââââââââââââââââ
+// ── Start Server ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`ð Khmer Card Game running at http://localhost:${PORT}`);
-});
+  console.log(`🃏 Khmer Card Game running at http://

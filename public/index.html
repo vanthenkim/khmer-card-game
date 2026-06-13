@@ -503,7 +503,7 @@ async function submitAuth(e){
   try{
     const r=await fetch(authTab==='login'?'/api/login':'/api/register',{
 
-      method:'POST',headers:{'ontent-Type':'application/json'},body:JSON.stringify({username:un,password:pw})
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:un,password:pw})
     });
     const d=await r.json();
     if(!d.ok){document.getElementById('authError').textContent=d.error;return}
