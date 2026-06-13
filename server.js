@@ -89,6 +89,18 @@ app.post('/api/login', (req, res) => {
   res.json({ ok:true, user: safeUser(user) });
 });
 
+
+// ── Admin: download users.csv ─────────────────────────────────
+// Visit: /admin/users?key=icf2026  (change the key to something secret)
+app.get('/admin/users', (req, res) => {
+  if (req.query.key !== 'icf2026') return res.status(403).send('Forbidden');
+  saveUsers(); // flush latest state first
+  if (!fs.existsSync(DATA_FILE)) return res.status(404).send('No users yet');
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="users.csv"');
+  res.sendFile(DATA_FILE);
+});
+
 function safeUser(u) {
   return { id:u.id, username:u.username, coins:u.coins, diamonds:u.diamonds, wins:u.wins, losses:u.losses };
 }
